@@ -122,6 +122,16 @@
   .ready { background: #16a34a !important; }
   .ready .big { color: white; }
   .ready .lbl { color: #dcfce7; }
+  .capture {
+    margin-top: 12px;
+    text-align: center;
+    color: #fbbf24;
+    font-size: 13px;
+    background: rgba(251, 191, 36, 0.08);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 10px;
+    padding: 10px;
+  }
   .nobooth {
     text-align: center;
     color: #cbd5e1;
@@ -273,6 +283,7 @@ function paintStatus(data) {
         ? `${BOOTH}번 부스로 오셔서 이 번호를 보여주세요!`
         : `차례가 가까워지면 <b>${BOOTH}번 부스</b>로 와주세요.<br/>이 번호를 직원에게 보여주시면 됩니다.`}
     </p>
+    <p class="capture">화면을 <b>캡쳐</b>해두시면 안전합니다.</p>
     <button class="ghost" id="cancel">대기 취소 / 다시 등록</button>
   `;
   document.getElementById('cancel').addEventListener('click', () => {
