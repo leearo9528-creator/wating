@@ -138,8 +138,30 @@
 const card = document.getElementById('card');
 const params = new URLSearchParams(location.search);
 const BOOTH = params.get('booth');
-const STORAGE_KEY = BOOTH ? `wating.phone.${BOOTH}` : null;
+const STORAGE_KEY = BOOTH ? `wating.entry.${BOOTH}` : null;
 let pollTimer = null;
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+function loadEntry() {
+  if (!STORAGE_KEY) return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveEntry(entry) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entry));
+}
+
+function clearEntry() {
+  localStorage.removeItem(STORAGE_KEY);
+}
 
 function renderNoBooth() {
   card.innerHTML = `
@@ -157,31 +179,32 @@ function renderForm(error) {
     <div class="top">
       <span class="booth-tag">${BOOTH}번 부스</span>
       <h1>대기 등록</h1>
-      <p class="sub">전화번호와 인원수를 입력해주세요</p>
+      <p class="sub">닉네임과 인원수를 입력해주세요</p>
     </div>
-    <label for="phone">전화번호</label>
-    <input id="phone" type="tel" inputmode="numeric" placeholder="010-1234-5678" autocomplete="tel" />
+    <label for="name">닉네임</label>
+    <input id="name" type="text" maxlength="20" placeholder="예: 철수, 영희네 가족" autocomplete="off" />
     <label for="people">인원수</label>
     <input id="people" type="number" inputmode="numeric" min="1" max="50" placeholder="2" />
     <button id="submit">대기 등록</button>
     <div class="err" id="err">${error || ''}</div>
   `;
   document.getElementById('submit').addEventListener('click', register);
-  document.getElementById('phone').addEventListener('keydown', (e) => {
+  document.getElementById('name').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') document.getElementById('people').focus();
   });
   document.getElementById('people').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') register();
   });
+  document.getElementById('name').focus();
 }
 
 async function register() {
-  const phone = document.getElementById('phone').value.trim();
+  const name = document.getElementById('name').value.trim();
   const people = document.getElementById('people').value.trim();
   const err = document.getElementById('err');
   err.textContent = '';
 
-  if (!phone) { err.textContent = '전화번호를 입력해주세요.'; return; }
+  if (!name) { err.textContent = '닉네임을 입력해주세요.'; return; }
   if (!people) { err.textContent = '인원수를 입력해주세요.'; return; }
 
   document.getElementById('submit').disabled = true;
@@ -189,7 +212,7 @@ async function register() {
     const res = await fetch('/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, people, booth: BOOTH }),
+      body: JSON.stringify({ name, people, booth: BOOTH }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -197,7 +220,7 @@ async function register() {
       document.getElementById('submit').disabled = false;
       return;
     }
-    localStorage.setItem(STORAGE_KEY, phone.replace(/[^0-9]/g, ''));
+    saveEntry({ number: data.number, name: data.name });
     renderStatus();
   } catch {
     err.textContent = '네트워크 오류. 다시 시도해주세요.';
@@ -206,13 +229,13 @@ async function register() {
 }
 
 async function fetchStatus() {
-  const phone = localStorage.getItem(STORAGE_KEY);
-  if (!phone) { renderForm(); return; }
+  const entry = loadEntry();
+  if (!entry || !entry.number) { renderForm(); return; }
   try {
-    const url = '/api/status?phone=' + encodeURIComponent(phone) + '&booth=' + encodeURIComponent(BOOTH);
+    const url = '/api/status?booth=' + encodeURIComponent(BOOTH) + '&number=' + entry.number;
     const res = await fetch(url);
     if (res.status === 404) {
-      localStorage.removeItem(STORAGE_KEY);
+      clearEntry();
       renderForm('이전 대기가 종료되어 새로 등록해주세요.');
       return;
     }
@@ -225,10 +248,11 @@ async function fetchStatus() {
 
 function paintStatus(data) {
   const isMyTurn = data.aheadGroups === 0;
+  const safeName = escapeHtml(data.name || '');
   card.innerHTML = `
     <div class="top">
       <span class="booth-tag">${BOOTH}번 부스</span>
-      <h1>내 대기번호</h1>
+      <h1>${safeName}님 대기번호</h1>
     </div>
     <div class="my-num">
       <div class="value">${data.number}</div>
@@ -253,7 +277,7 @@ function paintStatus(data) {
   `;
   document.getElementById('cancel').addEventListener('click', () => {
     if (!confirm('대기 정보를 지우고 다시 등록하시겠어요?')) return;
-    localStorage.removeItem(STORAGE_KEY);
+    clearEntry();
     renderForm();
   });
 }
@@ -266,7 +290,7 @@ function renderStatus() {
 
 if (!BOOTH) {
   renderNoBooth();
-} else if (localStorage.getItem(STORAGE_KEY)) {
+} else if (loadEntry()) {
   renderStatus();
 } else {
   renderForm();

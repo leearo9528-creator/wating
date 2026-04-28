@@ -104,6 +104,12 @@ const params = new URLSearchParams(location.search);
 const BOOTH = params.get('id');
 const app = document.getElementById('app');
 
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
 function renderPicker() {
   const cells = ['1','2','3','4','5','6','7']
     .map((id) => `<a href="?id=${id}">${id}번 부스</a>`).join('');
@@ -146,7 +152,7 @@ function paint(data) {
     <div class="item ${i === 0 ? 'next' : ''}">
       <div class="num">${e.number}</div>
       <div class="meta">
-        <div class="ppl">${e.people}명</div>
+        <div class="ppl">${escapeHtml(e.name || '')} · ${e.people}명</div>
         ${i === 0 ? '<div>다음 손님</div>' : `<div>${i}번째 대기</div>`}
       </div>
       <button data-num="${e.number}">완료</button>

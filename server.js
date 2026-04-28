@@ -37,8 +37,8 @@ function scheduleSave() {
   }, 200);
 }
 
-function normalizePhone(raw) {
-  return String(raw || '').replace(/[^0-9]/g, '');
+function normalizeName(raw) {
+  return String(raw || '').trim().slice(0, 20);
 }
 
 function normalizeBooth(raw) {
@@ -47,47 +47,40 @@ function normalizeBooth(raw) {
 }
 
 app.post('/api/register', (req, res) => {
-  const phone = normalizePhone(req.body && req.body.phone);
+  const name = normalizeName(req.body && req.body.name);
   const people = parseInt(req.body && req.body.people, 10);
   const booth = normalizeBooth(req.body && req.body.booth);
 
   if (!booth) {
     return res.status(400).json({ error: '잘못된 부스입니다. QR을 다시 확인해주세요.' });
   }
-  if (!phone || phone.length < 9 || phone.length > 11) {
-    return res.status(400).json({ error: '전화번호를 다시 확인해주세요.' });
+  if (!name) {
+    return res.status(400).json({ error: '닉네임을 입력해주세요.' });
   }
   if (!people || people < 1 || people > 50) {
     return res.status(400).json({ error: '인원수는 1~50명 사이로 입력해주세요.' });
   }
 
-  const existing = state.queue.find(
-    (e) => e.phone === phone && e.booth === booth && !e.done,
-  );
-  if (existing) {
-    return res.json({ number: existing.number, alreadyRegistered: true });
-  }
-
   const entry = {
     booth,
     number: state.counters[booth]++,
-    phone,
+    name,
     people,
     createdAt: Date.now(),
     done: false,
   };
   state.queue.push(entry);
   scheduleSave();
-  res.json({ number: entry.number });
+  res.json({ number: entry.number, name: entry.name });
 });
 
 app.get('/api/status', (req, res) => {
-  const phone = normalizePhone(req.query.phone);
   const booth = normalizeBooth(req.query.booth);
+  const number = parseInt(req.query.number, 10);
   if (!booth) return res.status(400).json({ error: '잘못된 부스입니다.' });
 
   const entry = state.queue.find(
-    (e) => e.phone === phone && e.booth === booth && !e.done,
+    (e) => e.booth === booth && e.number === number && !e.done,
   );
   if (!entry) {
     return res.status(404).json({ error: '대기 정보를 찾을 수 없습니다.' });
@@ -104,6 +97,7 @@ app.get('/api/status', (req, res) => {
   res.json({
     booth,
     number: entry.number,
+    name: entry.name,
     people: entry.people,
     aheadGroups,
     aheadPeople,
@@ -116,7 +110,7 @@ app.get('/api/list', (req, res) => {
   const waiting = state.queue
     .filter((e) => !e.done && e.booth === booth)
     .sort((a, b) => a.number - b.number)
-    .map((e) => ({ number: e.number, people: e.people }));
+    .map((e) => ({ number: e.number, name: e.name, people: e.people }));
   res.json({ booth, waiting, total: waiting.length });
 });
 
