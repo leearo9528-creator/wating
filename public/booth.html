@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>부스 화면</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    background: #0f172a; color: #f8fafc; min-height: 100vh;
+  }
+  header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #1e293b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  header h1 { margin: 0; font-size: 20px; }
+  header .booth {
+    background: #3b82f6;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  header .count { color: #94a3b8; font-size: 14px; }
+  .picker {
+    padding: 24px;
+    text-align: center;
+    color: #cbd5e1;
+  }
+  .picker .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 10px;
+    margin-top: 16px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .picker a {
+    padding: 18px;
+    background: #1e293b;
+    border-radius: 12px;
+    color: white;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 18px;
+  }
+  .list {
+    padding: 16px;
+    display: grid;
+    gap: 10px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .item {
+    background: #1e293b;
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .item.next { background: #1d4ed8; }
+  .num {
+    font-size: 32px;
+    font-weight: 800;
+    min-width: 70px;
+    color: #fbbf24;
+  }
+  .next .num { color: white; }
+  .meta { flex: 1; color: #cbd5e1; font-size: 14px; }
+  .meta .ppl { font-size: 18px; color: white; font-weight: 600; }
+  button {
+    padding: 12px 18px;
+    background: #16a34a;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:active { background: #15803d; }
+  .empty {
+    text-align: center;
+    color: #94a3b8;
+    padding: 60px 20px;
+    font-size: 16px;
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const BOOTH = params.get('id');
+const app = document.getElementById('app');
+
+function renderPicker() {
+  const cells = ['1','2','3','4','5','6','7']
+    .map((id) => `<a href="?id=${id}">${id}번 부스</a>`).join('');
+  app.innerHTML = `
+    <div class="picker">
+      <h2>부스를 선택하세요</h2>
+      <div class="grid">${cells}</div>
+    </div>
+  `;
+}
+
+function renderHeader() {
+  app.innerHTML = `
+    <header>
+      <span class="booth">${BOOTH}번 부스</span>
+      <h1>대기열</h1>
+      <span class="count" id="count">대기 0팀</span>
+    </header>
+    <div class="list" id="list"></div>
+  `;
+}
+
+async function refresh() {
+  try {
+    const res = await fetch('/api/list?booth=' + encodeURIComponent(BOOTH));
+    if (!res.ok) return;
+    const data = await res.json();
+    paint(data);
+  } catch {}
+}
+
+function paint(data) {
+  document.getElementById('count').textContent = `대기 ${data.total}팀`;
+  const list = document.getElementById('list');
+  if (data.waiting.length === 0) {
+    list.innerHTML = '<div class="empty">대기 중인 손님이 없습니다.</div>';
+    return;
+  }
+  list.innerHTML = data.waiting.map((e, i) => `
+    <div class="item ${i === 0 ? 'next' : ''}">
+      <div class="num">${e.number}</div>
+      <div class="meta">
+        <div class="ppl">${e.people}명</div>
+        ${i === 0 ? '<div>다음 손님</div>' : `<div>${i}번째 대기</div>`}
+      </div>
+      <button data-num="${e.number}">완료</button>
+    </div>
+  `).join('');
+  list.querySelectorAll('button').forEach((b) => {
+    b.addEventListener('click', () => done(parseInt(b.dataset.num, 10)));
+  });
+}
+
+async function done(num) {
+  try {
+    await fetch('/api/done/' + encodeURIComponent(BOOTH) + '/' + num, { method: 'POST' });
+    refresh();
+  } catch {}
+}
+
+if (!BOOTH || !['1','2','3','4','5','6','7'].includes(BOOTH)) {
+  renderPicker();
+} else {
+  renderHeader();
+  refresh();
+  setInterval(refresh, 3000);
+}
+</script>
+</body>
+</html>

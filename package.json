@@ -1,0 +1,13 @@
+{
+  "name": "wating",
+  "version": "1.0.0",
+  "private": true,
+  "description": "축제 현장 대기 시스템",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

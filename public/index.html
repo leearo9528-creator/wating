@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>축제 대기</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    background: #0f172a;
+    color: #f8fafc;
+    min-height: 100vh;
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 20px;
+  }
+  .card {
+    width: 100%;
+    max-width: 420px;
+    background: #1e293b;
+    border-radius: 20px;
+    padding: 28px 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+  .booth-tag {
+    display: inline-block;
+    background: #3b82f6;
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+  h1 {
+    margin: 0 0 6px;
+    font-size: 22px;
+    text-align: center;
+  }
+  .top { text-align: center; }
+  .sub {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+  label {
+    display: block;
+    margin: 14px 0 6px;
+    font-size: 14px;
+    color: #cbd5e1;
+  }
+  input {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #f8fafc;
+    font-size: 17px;
+    outline: none;
+  }
+  input:focus { border-color: #3b82f6; }
+  button {
+    width: 100%;
+    margin-top: 20px;
+    padding: 16px;
+    border-radius: 12px;
+    border: none;
+    background: #3b82f6;
+    color: white;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:active { background: #2563eb; }
+  button.ghost {
+    background: transparent;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    margin-top: 12px;
+  }
+  .err {
+    margin-top: 12px;
+    color: #f87171;
+    font-size: 14px;
+    text-align: center;
+    min-height: 20px;
+  }
+  .my-num { text-align: center; margin: 8px 0 16px; }
+  .my-num .label { color: #94a3b8; font-size: 14px; }
+  .my-num .value {
+    font-size: 84px;
+    font-weight: 800;
+    color: #fbbf24;
+    line-height: 1.1;
+    letter-spacing: -2px;
+  }
+  .ahead {
+    background: #0f172a;
+    border-radius: 14px;
+    padding: 18px;
+    text-align: center;
+  }
+  .ahead .big { font-size: 40px; font-weight: 700; color: #f8fafc; }
+  .ahead .lbl { color: #94a3b8; font-size: 14px; margin-top: 4px; }
+  .row { display: flex; gap: 10px; margin-top: 8px; }
+  .row > .ahead { flex: 1; }
+  .notice {
+    margin-top: 18px;
+    text-align: center;
+    color: #cbd5e1;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .ready { background: #16a34a !important; }
+  .ready .big { color: white; }
+  .ready .lbl { color: #dcfce7; }
+  .nobooth {
+    text-align: center;
+    color: #cbd5e1;
+    line-height: 1.6;
+    font-size: 15px;
+    padding: 20px 0;
+  }
+</style>
+</head>
+<body>
+  <div class="card" id="card"></div>
+
+<script>
+const card = document.getElementById('card');
+const params = new URLSearchParams(location.search);
+const BOOTH = params.get('booth');
+const STORAGE_KEY = BOOTH ? `wating.phone.${BOOTH}` : null;
+let pollTimer = null;
+
+function renderNoBooth() {
+  card.innerHTML = `
+    <div class="top"><h1>축제 체험 대기</h1></div>
+    <div class="nobooth">
+      각 부스에 비치된 <b>QR코드</b>를 스캔해주세요.<br/>
+      부스를 선택하지 않은 상태입니다.
+    </div>
+  `;
+}
+
+function renderForm(error) {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  card.innerHTML = `
+    <div class="top">
+      <span class="booth-tag">${BOOTH}번 부스</span>
+      <h1>대기 등록</h1>
+      <p class="sub">전화번호와 인원수를 입력해주세요</p>
+    </div>
+    <label for="phone">전화번호</label>
+    <input id="phone" type="tel" inputmode="numeric" placeholder="010-1234-5678" autocomplete="tel" />
+    <label for="people">인원수</label>
+    <input id="people" type="number" inputmode="numeric" min="1" max="50" placeholder="2" />
+    <button id="submit">대기 등록</button>
+    <div class="err" id="err">${error || ''}</div>
+  `;
+  document.getElementById('submit').addEventListener('click', register);
+  document.getElementById('phone').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('people').focus();
+  });
+  document.getElementById('people').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') register();
+  });
+}
+
+async function register() {
+  const phone = document.getElementById('phone').value.trim();
+  const people = document.getElementById('people').value.trim();
+  const err = document.getElementById('err');
+  err.textContent = '';
+
+  if (!phone) { err.textContent = '전화번호를 입력해주세요.'; return; }
+  if (!people) { err.textContent = '인원수를 입력해주세요.'; return; }
+
+  document.getElementById('submit').disabled = true;
+  try {
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, people, booth: BOOTH }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      err.textContent = data.error || '등록에 실패했습니다.';
+      document.getElementById('submit').disabled = false;
+      return;
+    }
+    localStorage.setItem(STORAGE_KEY, phone.replace(/[^0-9]/g, ''));
+    renderStatus();
+  } catch {
+    err.textContent = '네트워크 오류. 다시 시도해주세요.';
+    document.getElementById('submit').disabled = false;
+  }
+}
+
+async function fetchStatus() {
+  const phone = localStorage.getItem(STORAGE_KEY);
+  if (!phone) { renderForm(); return; }
+  try {
+    const url = '/api/status?phone=' + encodeURIComponent(phone) + '&booth=' + encodeURIComponent(BOOTH);
+    const res = await fetch(url);
+    if (res.status === 404) {
+      localStorage.removeItem(STORAGE_KEY);
+      renderForm('이전 대기가 종료되어 새로 등록해주세요.');
+      return;
+    }
+    const data = await res.json();
+    paintStatus(data);
+  } catch {
+    // keep last view, retry next tick
+  }
+}
+
+function paintStatus(data) {
+  const isMyTurn = data.aheadGroups === 0;
+  card.innerHTML = `
+    <div class="top">
+      <span class="booth-tag">${BOOTH}번 부스</span>
+      <h1>내 대기번호</h1>
+    </div>
+    <div class="my-num">
+      <div class="value">${data.number}</div>
+      <div class="label">${data.people}명</div>
+    </div>
+    <div class="row">
+      <div class="ahead ${isMyTurn ? 'ready' : ''}">
+        <div class="big">${data.aheadGroups}</div>
+        <div class="lbl">${isMyTurn ? '곧 입장' : '앞 팀 수'}</div>
+      </div>
+      <div class="ahead ${isMyTurn ? 'ready' : ''}">
+        <div class="big">${data.aheadPeople}</div>
+        <div class="lbl">${isMyTurn ? '내 차례' : '앞 인원'}</div>
+      </div>
+    </div>
+    <p class="notice">
+      ${isMyTurn
+        ? `${BOOTH}번 부스로 오셔서 이 번호를 보여주세요!`
+        : `차례가 가까워지면 <b>${BOOTH}번 부스</b>로 와주세요.<br/>이 번호를 직원에게 보여주시면 됩니다.`}
+    </p>
+    <button class="ghost" id="cancel">대기 취소 / 다시 등록</button>
+  `;
+  document.getElementById('cancel').addEventListener('click', () => {
+    if (!confirm('대기 정보를 지우고 다시 등록하시겠어요?')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    renderForm();
+  });
+}
+
+function renderStatus() {
+  fetchStatus();
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(fetchStatus, 5000);
+}
+
+if (!BOOTH) {
+  renderNoBooth();
+} else if (localStorage.getItem(STORAGE_KEY)) {
+  renderStatus();
+} else {
+  renderForm();
+}
+</script>
+</body>
+</html>
