@@ -73,7 +73,7 @@ async function registerWaitlistFallback(boothId: string, name: string, count: nu
   }).select().single();
 
   if (error) throw error;
-  return { success: true, data };
+  return { success: true as const, data };
 }
 
 export async function callWaitlist(id: string, boothId: string) {
