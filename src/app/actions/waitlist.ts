@@ -47,9 +47,9 @@ export async function registerWaitlist(boothId: string, name: string, count: num
       throw error;
     }
 
-    return { success: true, data };
+    return { success: true as const, data };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false as const, data: null, error: error.message };
   }
 }
 
@@ -109,7 +109,7 @@ export async function callWaitlist(id: string, boothId: string) {
 
     return { success: true, data };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false as const, data: null, error: error.message };
   }
 }
 
@@ -128,7 +128,7 @@ export async function completeWaitlist(id: string) {
 
     return { success: true, data };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false as const, data: null, error: error.message };
   }
 }
 
@@ -147,7 +147,7 @@ export async function cancelWaitlist(id: string) {
 
     return { success: true, data };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false as const, data: null, error: error.message };
   }
 }
 
@@ -172,6 +172,6 @@ export async function getBoothInfo(boothId: string) {
     const data = await getCachedBoothData(boothId);
     return { success: true, data };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false as const, data: null, error: error.message };
   }
 }

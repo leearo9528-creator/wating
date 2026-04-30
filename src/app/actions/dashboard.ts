@@ -35,6 +35,6 @@ export async function fetchAdminBooths(userRole: string, userId: string, boothId
     
     return { success: true, data };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false as const, data: null, error: error.message };
   }
 }

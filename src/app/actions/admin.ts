@@ -46,7 +46,7 @@ export async function createBoothAdmin(email: string, password: string, boothId:
 
     return { success: true, user: authData.user };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false as const, data: null, error: error.message };
   }
 }
 
@@ -65,7 +65,7 @@ export async function updateBoothInfo(boothId: string, updates: { name?: string,
 
     return { success: true, data };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false as const, data: null, error: error.message };
   }
 }
 
@@ -125,7 +125,7 @@ export async function createBooth(name: string, description: string, photo_url: 
 
     return { success: true, data: finalBooth };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false as const, data: null, error: error.message };
   }
 }
 
@@ -142,7 +142,7 @@ export async function getBoothSettings(boothId: string) {
     if (error) throw error;
     return { success: true, data };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false as const, data: null, error: error.message };
   }
 }
 
@@ -197,7 +197,7 @@ export async function createBoothsBulk(names: string[], super_owner_id: string) 
 
     return { success: true, data: booths };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false as const, data: null, error: error.message };
   }
 }
 
@@ -230,7 +230,7 @@ export async function uploadBoothPhoto(boothId: string, formData: FormData) {
 
     return { success: true, url: publicUrl };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false as const, data: null, error: error.message };
   }
 }
 
@@ -261,6 +261,6 @@ export async function deleteBooth(boothId: string) {
 
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false as const, data: null, error: error.message };
   }
 }
