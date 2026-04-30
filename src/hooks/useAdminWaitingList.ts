@@ -1,11 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
-// Initialize Supabase client safely
-const supabase = supabaseUrl.startsWith('http') ? createClient(supabaseUrl, supabaseAnonKey) : null;
+import { supabaseClient } from '@/lib/supabase-client';
 
 export interface WaitingListRow {
   id: string;
@@ -19,45 +13,39 @@ export interface WaitingListRow {
 
 export function useAdminWaitingList(boothId: string) {
   const [list, setList] = useState<WaitingListRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!boothId || !supabase) {
-      setIsLoading(false);
-      return;
-    }
+    if (!boothId || !supabaseClient) return;
 
-    const fetchInitial = async () => {
-      const { data, error } = await supabase
+    const fetchList = async () => {
+      const { data } = await supabaseClient!
         .from('waiting_list')
         .select('*')
         .eq('booth_id', boothId)
         .in('status', ['waiting', 'calling'])
         .order('waiting_number', { ascending: true });
 
-      if (!error && data) {
-        setList(data as WaitingListRow[]);
-      }
-      setIsLoading(false);
+      if (data) setList(data as WaitingListRow[]);
     };
 
-    fetchInitial();
+    fetchList();
 
-    const channel = supabase.channel(`admin-waiting-${boothId}`)
+    const channel = supabaseClient
+      .channel(`admin-waiting-${boothId}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'waiting_list',
         filter: `booth_id=eq.${boothId}`
       }, () => {
-        fetchInitial();
+        fetchList();
       })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabaseClient!.removeChannel(channel);
     };
   }, [boothId]);
 
-  return { list, isLoading };
+  return { list };
 }
