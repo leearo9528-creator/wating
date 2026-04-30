@@ -1,41 +1,80 @@
 # 축제 현장 대기 시스템
 
-부스 7개를 운영하는 축제 현장에서 가볍게 굴리는 대기열 시스템.
-부스마다 독립된 큐를 가지며, 손님은 부스의 QR을 찍어 해당 부스 대기에 등록한다.
+부스 7개를 운영하는 축제 현장에서 굴리는 대기열 시스템.
+부스마다 독립된 큐, 손님은 부스 QR 찍어서 닉네임+인원 등록.
+
+**스택:** Vercel (API Routes + 정적 호스팅) + Supabase (Postgres)
 
 ## 동작 방식
 
 1. 손님이 부스 앞 QR을 찍음 → `/?booth=3` 같은 페이지로 진입
-2. 닉네임 + 인원수 입력하고 등록 → 대기번호 발급
+2. 닉네임 + 인원수 입력 → 대기번호 발급
 3. 자기 폰 화면에 자기 번호 + 앞에 남은 팀/인원 자동 표시 (5초마다 갱신)
-4. 차례가 가까워지면 부스에 와서 화면의 번호를 직원에게 보여줌
+4. 차례 가까워지면 부스에 와서 번호를 직원에게 보여줌
 5. 직원은 부스 화면(`/booth.html?id=3`)에서 "완료" 탭하면 큐 진행
 
-직원이 호출하는 알림 시스템은 없음. 손님이 자기 폰으로 차례를 직접 확인.
+## 프로젝트 구조
 
-## 실행
+```
+api/                Vercel API Routes
+  register.js       POST /api/register
+  status.js         GET  /api/status?booth=&number=
+  list.js           GET  /api/list?booth=
+  done.js           POST /api/done   (body: { booth, number })
+  booths.js         GET  /api/booths
+lib/
+  supabase.js       Supabase 클라이언트 (service role)
+public/
+  index.html        손님 페이지
+  booth.html        부스 직원 화면
+supabase/
+  schema.sql        Supabase에 한 번만 실행
+```
+
+## 셋업 (한 번만)
+
+### 1. Supabase
+
+1. [supabase.com](https://supabase.com)에서 프로젝트 생성
+2. Dashboard > SQL Editor 열고 `supabase/schema.sql` 내용 붙여넣고 실행
+3. Dashboard > Settings > API에서 다음 두 값 복사:
+   - **Project URL** (`https://xxx.supabase.co`)
+   - **service_role key** (절대 클라이언트에 노출 X)
+
+### 2. Vercel
+
+1. 이 레포를 GitHub에 푸시 (이미 되어있음)
+2. [vercel.com](https://vercel.com) > Add New Project > 이 레포 import
+3. Environment Variables에 두 개 추가:
+   - `SUPABASE_URL`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+4. Deploy
+
+자동으로 `https://wating.vercel.app` 같은 도메인이 생김.
+
+### 3. QR 코드 만들기
+
+각 부스마다 손님 페이지 URL을 QR로 만들어 출력:
+- 부스 1: `https://your-domain.vercel.app/?booth=1`
+- 부스 2: `https://your-domain.vercel.app/?booth=2`
+- ... (부스 7까지)
+
+부스 직원용 화면:
+- `https://your-domain.vercel.app/booth.html?id=1` ~ `?id=7`
+
+## 로컬 개발
 
 ```bash
 npm install
-npm start
+cp .env.example .env.local   # 값 채우기
+npx vercel dev               # 또는: npm run dev
 ```
 
-기본 포트는 3000. `PORT` 환경변수로 변경 가능.
+## 운영 팁
 
-## URL
-
-- 손님 페이지: `http://<서버주소>:3000/?booth=<1~7>`
-- 부스 직원 화면: `http://<서버주소>:3000/booth.html?id=<1~7>`
-
-각 부스에 비치할 QR은 위 손님 페이지 URL을 인코딩해서 만들면 됩니다.
-
-## 동시 접속
-
-- 상태는 메모리에 두고 `data.json`에 비동기 백업
-- 손님 페이지 폴링 주기 5초, 부스 페이지 3초
-- 200명 동시 접속도 무리 없음
-
-## 데이터
-
-- `data.json` — 큐와 부스별 카운터
-- 행사 끝나면 백업 후 삭제하면 다음날 1번부터 다시 시작
+- 행사 끝나고 다음에 다시 쓰려면 Supabase SQL Editor에서:
+  ```sql
+  truncate queue;
+  update booth_counters set next_number = 1;
+  ```
+- 메모리/파일 기반이 아니라 DB 기반이므로 200명 동시 접속 무난

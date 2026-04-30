@@ -165,7 +165,11 @@ function paint(data) {
 
 async function done(num) {
   try {
-    await fetch('/api/done/' + encodeURIComponent(BOOTH) + '/' + num, { method: 'POST' });
+    await fetch('/api/done', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ booth: BOOTH, number: num }),
+    });
     refresh();
   } catch {}
 }
