@@ -3,6 +3,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { unstable_cache } from 'next/cache'
 
+type RegisterResult =
+  | { success: true; data: { id: string; waiting_number: number } }
+  | { success: false; data: null; error: string };
+
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -20,7 +24,7 @@ const supabaseAdmin = supabaseUrl.startsWith('http') && supabaseKey ? createClie
 
 let dummyCounter = 1;
 
-export async function registerWaitlist(boothId: string, name: string, count: number) {
+export async function registerWaitlist(boothId: string, name: string, count: number): Promise<RegisterResult> {
   try {
     if (!supabaseAdmin) {
       // Demo fallback if supabase is not initialized
@@ -42,12 +46,12 @@ export async function registerWaitlist(boothId: string, name: string, count: num
       // If RPC doesn't exist yet, fallback to original logic for backwards compatibility
       if (error.code === 'PGRST202' || error.message?.includes('Could not find the function')) {
         console.warn('RPC not found, falling back to JS-based insertion.');
-        return await registerWaitlistFallback(boothId, name, count);
+        return await registerWaitlistFallback(boothId, name, count) as RegisterResult;
       }
       throw error;
     }
 
-    return { success: true as const, data };
+    return { success: true as const, data: data as { id: string; waiting_number: number } };
   } catch (error: any) {
     return { success: false as const, data: null, error: error.message };
   }
