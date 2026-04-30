@@ -54,13 +54,13 @@ supabase/
 
 ### 3. QR 코드 만들기
 
-각 부스마다 손님 페이지 URL을 QR로 만들어 출력:
-- 부스 1: `https://your-domain.vercel.app/?booth=1`
-- 부스 2: `https://your-domain.vercel.app/?booth=2`
-- ... (부스 7까지)
+배포 끝나면 브라우저에서 `https://<도메인>/qr.html` 열기.
+부스 1~7 QR 7개가 한 화면에 뜸. 상단 **인쇄** 버튼으로 종이 출력하거나 스크린샷.
+
+(다른 도메인으로 바꿔 만들고 싶으면 상단 입력칸에 URL 넣고 **적용**)
 
 부스 직원용 화면:
-- `https://your-domain.vercel.app/booth.html?id=1` ~ `?id=7`
+- `https://<도메인>/booth.html?id=1` ~ `?id=7`
 
 ## 로컬 개발
 
