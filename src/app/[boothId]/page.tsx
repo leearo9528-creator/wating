@@ -96,17 +96,17 @@ export default function UserWaitingPage() {
                   <Store className="w-8 h-8 text-muted-foreground" />
                 </div>
                 <h2 className="text-xl font-bold tracking-tight mb-2">
-                  {boothInfo?.status === 'closed' ? '웨이팅 준비 중입니다' : '웨이팅 접수가 마감되었습니다'}
+                  {boothInfo?.status === 'closed' ? '대기 접수 준비 중입니다' : '대기 접수가 마감되었습니다'}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  {boothInfo?.status === 'closed' ? '아직 웨이팅 접수가 시작되지 않았습니다. \n잠시 후 다시 확인해주세요.' : '오늘의 웨이팅 접수가 마감되었습니다.'}
+                  {boothInfo?.status === 'closed' ? '아직 대기 접수가 시작되지 않았습니다. \n잠시 후 다시 확인해주세요.' : '오늘의 대기 접수가 마감되었습니다.'}
                 </p>
               </div>
             </div>
           ) : (
             <div className="rounded-2xl bg-card shadow-sm border border-border overflow-hidden">
               <div className="px-5 pt-6 pb-2">
-                <h2 className="text-xl font-bold tracking-tight">웨이팅 등록</h2>
+                <h2 className="text-xl font-bold tracking-tight">대기 등록</h2>
                 <p className="text-sm text-muted-foreground mt-1">정보를 입력하고 대기표를 발급받으세요.</p>
               </div>
 
