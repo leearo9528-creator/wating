@@ -56,7 +56,7 @@ export default function UserWaitingPage() {
       setMyWaitlistId(res.data.id);
       setViewState('confirmed');
     } else {
-      alert('등록에 실패했습니다: ' + res.error);
+      alert('등록에 실패했습니다: ' + ('error' in res ? res.error : '알 수 없는 오류'));
     }
     
     setIsSubmitting(false);
