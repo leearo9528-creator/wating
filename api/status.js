@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   }
 
   const { data: entry, error: entryErr } = await supabase
-    .from('queue')
+    .from('wating_queue')
     .select('booth, number, name, people')
     .eq('booth', booth)
     .eq('number', number)
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   if (!entry) return res.status(404).json({ error: '대기 정보를 찾을 수 없습니다.' });
 
   const { data: ahead, error: aheadErr } = await supabase
-    .from('queue')
+    .from('wating_queue')
     .select('people')
     .eq('booth', booth)
     .eq('done', false)

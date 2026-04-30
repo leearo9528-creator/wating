@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   }
 
   const { data, error } = await supabase
-    .from('queue')
+    .from('wating_queue')
     .update({ done: true, done_at: new Date().toISOString() })
     .eq('booth', booth)
     .eq('number', number)

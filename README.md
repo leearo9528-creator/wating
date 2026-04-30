@@ -74,7 +74,7 @@ npx vercel dev               # 또는: npm run dev
 
 - 행사 끝나고 다음에 다시 쓰려면 Supabase SQL Editor에서:
   ```sql
-  truncate queue;
-  update booth_counters set next_number = 1;
+  truncate wating_queue;
+  update wating_booth_counters set next_number = 1;
   ```
 - 메모리/파일 기반이 아니라 DB 기반이므로 200명 동시 접속 무난

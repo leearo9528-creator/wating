@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   }
 
   const { data: waiting, error } = await supabase
-    .from('queue')
+    .from('wating_queue')
     .select('number, name, people')
     .eq('booth', booth)
     .eq('done', false)

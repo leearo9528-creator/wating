@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: '인원수는 1~50명 사이로 입력해주세요.' });
   }
 
-  const { data: number, error: numErr } = await supabase.rpc('next_queue_number', {
+  const { data: number, error: numErr } = await supabase.rpc('wating_next_queue_number', {
     p_booth: booth,
   });
   if (numErr || number == null) {
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
   }
 
   const { error: insErr } = await supabase
-    .from('queue')
+    .from('wating_queue')
     .insert({ booth, number, name, people });
   if (insErr) {
     return res.status(500).json({ error: '등록 실패' });
