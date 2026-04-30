@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useAdminWaitingList } from '@/hooks/useAdminWaitingList';
 import { updateBoothInfo, getBoothSettings, uploadBoothPhoto } from '@/app/actions/admin';
 import { getBoothInfo } from '@/app/actions/waitlist';
-import { Plus, Minus, Megaphone, ArrowLeft, Save, Copy, KeyRound, UserRound, ImagePlus, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Minus, Megaphone, ArrowLeft, Save, Copy, KeyRound, UserRound, ImagePlus, ChevronDown, ChevronUp, Printer } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminPage() {
@@ -115,9 +115,18 @@ export default function AdminPage() {
             <p className="text-sm text-muted-foreground mt-0.5">{description || "대기열 현황 관리"}</p>
           </div>
         </div>
-        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${status === 'open' ? 'bg-green-100 text-green-700' : status === 'paused' ? 'bg-red-100 text-red-600' : 'bg-muted text-muted-foreground'}`}>
-          {status === 'open' ? '운영중' : status === 'paused' ? '접수마감' : '준비중'}
-        </span>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/admin/${boothId}/print`}
+            className="p-2 rounded-full hover:bg-black/5 text-muted-foreground"
+            title="출력 페이지"
+          >
+            <Printer className="w-5 h-5" />
+          </Link>
+          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${status === 'open' ? 'bg-green-100 text-green-700' : status === 'paused' ? 'bg-red-100 text-red-600' : 'bg-muted text-muted-foreground'}`}>
+            {status === 'open' ? '운영중' : status === 'paused' ? '접수마감' : '준비중'}
+          </span>
+        </div>
       </div>
 
       <div className="mx-auto flex max-w-md flex-col gap-6 px-5 pt-6 pb-2">
