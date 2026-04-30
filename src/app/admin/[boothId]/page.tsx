@@ -121,9 +121,32 @@ export default function AdminPage() {
         </span>
       </div>
 
-      <div className="mx-auto flex max-w-md flex-col gap-6 px-5 pt-8 pb-2">
+      <div className="mx-auto flex max-w-md flex-col gap-6 px-5 pt-6 pb-2">
         
-        {/* ===== 현재 진행 번호 ===== */}
+        {/* ===== 운영 상태 빠른 전환 ===== */}
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { value: 'closed', label: '준비중', color: 'bg-muted text-muted-foreground border-border' },
+            { value: 'open', label: '운영중', color: 'bg-green-100 text-green-700 border-green-200' },
+            { value: 'paused', label: '접수마감', color: 'bg-red-100 text-red-600 border-red-200' },
+          ].map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={async () => {
+                setStatus(opt.value);
+                await updateBoothInfo(boothId, { status: opt.value });
+              }}
+              className={`py-3 rounded-xl text-sm font-bold border-2 transition-all active:scale-95 ${
+                status === opt.value
+                  ? `${opt.color} ring-2 ring-offset-1 ring-current`
+                  : 'bg-card text-muted-foreground border-border opacity-60'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
         <div className="rounded-3xl bg-card p-8 shadow-sm border border-border text-center flex flex-col items-center justify-center">
           <p className="text-muted-foreground font-bold mb-6 flex items-center justify-center gap-1.5">
             <Megaphone className="w-5 h-5 text-primary" /> 현재 진행 중인 번호
@@ -239,6 +262,35 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* ===== 현장 스태프 로그인 정보 ===== */}
+        {adminId && adminPw && (
+          <div className="rounded-2xl bg-primary/5 p-5 shadow-sm border border-primary/20 space-y-3">
+            <h3 className="text-sm font-bold text-primary flex items-center gap-1.5 mb-2">
+              <KeyRound className="w-4 h-4" /> 현장 스태프 로그인 정보
+            </h3>
+            <div className="flex items-center justify-between bg-card px-4 py-3 rounded-xl border border-border">
+              <div className="flex items-center gap-3">
+                <UserRound className="w-4 h-4 text-muted-foreground" />
+                <span className="font-medium text-[15px]">{adminId}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(`아이디: ${adminId} / 비밀번호: ${adminPw}`);
+                  alert('복사되었습니다. 현장 스태프에게 전달해주세요.');
+                }}
+                className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1.5 rounded-lg active:scale-95 transition-all"
+              >
+                <Copy className="w-3.5 h-3.5 inline mr-1" /> 복사
+              </button>
+            </div>
+            <div className="flex items-center bg-card px-4 py-3 rounded-xl border border-border gap-3">
+              <KeyRound className="w-4 h-4 text-muted-foreground" />
+              <span className="font-medium text-[15px]">{adminPw}</span>
+            </div>
+          </div>
+        )}
+
         {/* ===== 부스 설정 (접이식) ===== */}
         <div className="mt-6">
           <button
@@ -308,48 +360,7 @@ export default function AdminPage() {
                     </button>
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-muted-foreground mb-1.5">운영 상태</label>
-                  <select
-                    value={status}
-                    onChange={e => setStatus(e.target.value)}
-                    className="w-full bg-secondary text-foreground px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-primary transition-all font-medium appearance-none"
-                  >
-                    <option value="closed">준비 중</option>
-                    <option value="open">운영 중 (웨이팅 접수 가능)</option>
-                    <option value="paused">접수 마감</option>
-                  </select>
-                </div>
               </div>
-
-              {adminId && adminPw && (
-                <div className="rounded-2xl bg-primary/5 p-5 shadow-sm border border-primary/20 space-y-3">
-                  <h3 className="text-sm font-bold text-primary flex items-center gap-1.5 mb-2">
-                    <KeyRound className="w-4 h-4" /> 현장 스태프 로그인 정보
-                  </h3>
-                  <div className="flex items-center justify-between bg-card px-4 py-3 rounded-xl border border-border">
-                    <div className="flex items-center gap-3">
-                      <UserRound className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-medium text-[15px]">{adminId}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(`아이디: ${adminId} / 비밀번호: ${adminPw}`);
-                        alert('복사되었습니다. 현장 스태프에게 전달해주세요.');
-                      }}
-                      className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1.5 rounded-lg active:scale-95 transition-all"
-                    >
-                      <Copy className="w-3.5 h-3.5 inline mr-1" /> 복사
-                    </button>
-                  </div>
-                  <div className="flex items-center bg-card px-4 py-3 rounded-xl border border-border gap-3">
-                    <KeyRound className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium text-[15px]">{adminPw}</span>
-                  </div>
-                </div>
-              )}
             
               <button
                 type="submit"
