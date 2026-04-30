@@ -1,0 +1,368 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useAdminWaitingList } from '@/hooks/useAdminWaitingList';
+import { updateBoothInfo, getBoothSettings, uploadBoothPhoto } from '@/app/actions/admin';
+import { getBoothInfo } from '@/app/actions/waitlist';
+import { Plus, Minus, Megaphone, ArrowLeft, Save, Copy, KeyRound, UserRound, ImagePlus, ChevronDown, ChevronUp } from 'lucide-react';
+import Link from 'next/link';
+
+export default function AdminPage() {
+  const params = useParams();
+  const router = useRouter();
+  const boothId = params.boothId as string;
+
+  const { list } = useAdminWaitingList(boothId);
+  
+  // Booth info (realtime number)
+  const [currentNumber, setCurrentNumber] = useState(0);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Settings state
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [status, setStatus] = useState('closed');
+  const [adminId, setAdminId] = useState('');
+  const [adminPw, setAdminPw] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const fetchBooth = async () => {
+      const res = await getBoothSettings(boothId);
+      if (res.success && res.data) {
+        setName(res.data.name);
+        setDescription(res.data.description || '');
+        setPhotoUrl(res.data.photo_url || '');
+        setStatus(res.data.status);
+        setCurrentNumber(res.data.current_number || 0);
+        setAdminId(res.data.admin_login_id || '');
+        setAdminPw(res.data.admin_login_pw || '');
+      }
+      setIsLoading(false);
+    };
+    fetchBooth();
+  }, [boothId]);
+
+  // Poll current_number
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const res = await getBoothInfo(boothId);
+      if (res.success && res.data) {
+        setCurrentNumber(res.data.current_number);
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [boothId]);
+
+  const handleUpdateNumber = async (newNumber: number) => {
+    if (newNumber < 0) return;
+    setIsUpdating(true);
+    setCurrentNumber(newNumber);
+    await updateBoothInfo(boothId, { current_number: newNumber });
+    setIsUpdating(false);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    const res = await updateBoothInfo(boothId, { name, description, photo_url: photoUrl, status });
+    setIsSaving(false);
+    if (res.success) {
+      alert('저장되었습니다.');
+    } else {
+      alert('오류 발생: ' + res.error);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('이미지 크기는 5MB 이하여야 합니다.');
+      return;
+    }
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await uploadBoothPhoto(boothId, formData);
+    setIsUploading(false);
+    if (res.success && res.url) {
+      setPhotoUrl(res.url);
+    } else {
+      alert('이미지 업로드에 실패했습니다.');
+    }
+  };
+
+  if (isLoading) {
+    return <div className="min-h-dvh bg-secondary flex items-center justify-center text-muted-foreground font-medium">로딩 중...</div>;
+  }
+
+  return (
+    <main className="min-h-dvh bg-secondary pb-24">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-secondary/80 backdrop-blur-md px-5 py-4 border-b border-border/50 flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard" className="p-2 -ml-2 rounded-full hover:bg-black/5">
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">{name || "부스 관리"}</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">{description || "대기열 현황 관리"}</p>
+          </div>
+        </div>
+        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${status === 'open' ? 'bg-green-100 text-green-700' : status === 'paused' ? 'bg-red-100 text-red-600' : 'bg-muted text-muted-foreground'}`}>
+          {status === 'open' ? '운영중' : status === 'paused' ? '접수마감' : '준비중'}
+        </span>
+      </div>
+
+      <div className="mx-auto flex max-w-md flex-col gap-6 px-5 pt-8 pb-2">
+        
+        {/* ===== 현재 진행 번호 ===== */}
+        <div className="rounded-3xl bg-card p-8 shadow-sm border border-border text-center flex flex-col items-center justify-center">
+          <p className="text-muted-foreground font-bold mb-6 flex items-center justify-center gap-1.5">
+            <Megaphone className="w-5 h-5 text-primary" /> 현재 진행 중인 번호
+          </p>
+          
+          <div className="flex items-center justify-center gap-6 mb-8 w-full">
+            <button 
+              onClick={() => handleUpdateNumber(currentNumber - 1)}
+              disabled={isUpdating || currentNumber <= 0}
+              className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-foreground hover:bg-secondary/80 active:scale-95 transition-all disabled:opacity-50"
+            >
+              <Minus className="w-8 h-8" />
+            </button>
+            
+            <div className="w-32 text-center">
+              <span className="text-7xl font-black tracking-tighter tabular-nums text-foreground">
+                {currentNumber}
+              </span>
+            </div>
+            
+            <button 
+              onClick={() => handleUpdateNumber(currentNumber + 1)}
+              disabled={isUpdating}
+              className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 shadow-sm"
+            >
+              <Plus className="w-8 h-8" />
+            </button>
+          </div>
+          
+          <button 
+            onClick={() => handleUpdateNumber(currentNumber + 1)}
+            disabled={isUpdating}
+            className="w-full py-4 rounded-xl bg-primary/10 text-primary font-bold text-lg hover:bg-primary/20 transition-colors"
+          >
+            다음 번호 진행 (+1)
+          </button>
+        </div>
+
+        {/* ===== 대기 현황 ===== */}
+        <div className="flex items-center justify-between mb-2 mt-4">
+          <h2 className="text-[18px] font-bold">대기 현황 <span className="text-primary">{list.length}</span>팀</h2>
+        </div>
+
+        {list.length === 0 ? (
+          <div className="rounded-2xl bg-card p-10 text-center shadow-sm border border-border">
+            <p className="text-muted-foreground text-[15px] font-medium">발급된 대기표가 없습니다.</p>
+          </div>
+        ) : (
+          <ul className="space-y-3">
+            {list.map((item) => (
+              <li key={item.id} className="rounded-2xl bg-card p-4 shadow-sm border border-border flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-secondary text-[17px] font-bold tabular-nums text-foreground">
+                      {item.waiting_number}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-[16px]">{item.name}</span>
+                        {item.waiting_number === currentNumber && (
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
+                            진행 차례
+                          </span>
+                        )}
+                        {item.waiting_number < currentNumber && (
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-muted-foreground">
+                            지나감
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[13px] text-muted-foreground mt-0.5">
+                        {item.count}명 · {new Date(item.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* ===== QR코드 & 웨이팅 링크 ===== */}
+        <div className="rounded-2xl bg-card p-5 shadow-sm border border-border text-center">
+          <p className="text-sm font-bold text-muted-foreground mb-3">📎 방문자 웨이팅 링크</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${typeof window !== 'undefined' ? window.location.origin : ''}/${boothId}`} 
+            alt="QR Code"
+            className="mx-auto w-48 h-48 rounded-xl border border-border mb-3"
+          />
+          <p className="text-xs text-muted-foreground mb-3 break-all">
+            {typeof window !== 'undefined' ? `${window.location.origin}/${boothId}` : ''}
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                const url = `${window.location.origin}/${boothId}`;
+                navigator.clipboard.writeText(url);
+                alert('링크가 복사되었습니다!');
+              }}
+              className="flex-1 py-2.5 bg-secondary text-foreground font-bold text-sm rounded-xl border border-border active:scale-[0.98] transition-all"
+            >
+              링크 복사
+            </button>
+            <button
+              type="button"
+              onClick={() => window.open(`/${boothId}`, '_blank')}
+              className="flex-1 py-2.5 bg-primary/10 text-primary font-bold text-sm rounded-xl active:scale-[0.98] transition-all"
+            >
+              미리보기
+            </button>
+          </div>
+        </div>
+
+        {/* ===== 부스 설정 (접이식) ===== */}
+        <div className="mt-6">
+          <button
+            type="button"
+            onClick={() => setShowSettings(!showSettings)}
+            className="w-full flex items-center justify-between rounded-2xl bg-card p-4 shadow-sm border border-border font-bold text-[15px]"
+          >
+            <span>⚙️ 부스 설정</span>
+            {showSettings ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
+          </button>
+
+          {showSettings && (
+            <form onSubmit={handleSave} className="mt-3 space-y-4">
+              <div className="rounded-2xl bg-card p-5 shadow-sm border border-border space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-muted-foreground mb-1.5">부스 이름</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    required
+                    className="w-full bg-secondary text-foreground px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-primary transition-all font-medium"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-muted-foreground mb-1.5">안내 문구 (위치 등)</label>
+                  <input
+                    type="text"
+                    value={description}
+                    onChange={e => setDescription(e.target.value)}
+                    className="w-full bg-secondary text-foreground px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-primary transition-all font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-muted-foreground mb-1.5">사진</label>
+                  {photoUrl && (
+                    <div className="mb-3 rounded-xl overflow-hidden border border-border aspect-video bg-muted relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={photoUrl} alt="Booth" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={photoUrl}
+                      onChange={e => setPhotoUrl(e.target.value)}
+                      placeholder="https://..."
+                      className="flex-1 bg-secondary text-foreground px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-primary transition-all font-medium text-sm"
+                    />
+                    <input 
+                      type="file" 
+                      ref={fileInputRef}
+                      onChange={handleImageUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      className="px-4 py-3 bg-card border border-border rounded-xl font-bold flex items-center gap-2 hover:bg-secondary/80 active:scale-95 transition-all text-sm shrink-0 whitespace-nowrap"
+                    >
+                      <ImagePlus className="w-4 h-4" />
+                      {isUploading ? '업로드 중...' : '선택'}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-muted-foreground mb-1.5">운영 상태</label>
+                  <select
+                    value={status}
+                    onChange={e => setStatus(e.target.value)}
+                    className="w-full bg-secondary text-foreground px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-primary transition-all font-medium appearance-none"
+                  >
+                    <option value="closed">준비 중</option>
+                    <option value="open">운영 중 (웨이팅 접수 가능)</option>
+                    <option value="paused">접수 마감</option>
+                  </select>
+                </div>
+              </div>
+
+              {adminId && adminPw && (
+                <div className="rounded-2xl bg-primary/5 p-5 shadow-sm border border-primary/20 space-y-3">
+                  <h3 className="text-sm font-bold text-primary flex items-center gap-1.5 mb-2">
+                    <KeyRound className="w-4 h-4" /> 현장 스태프 로그인 정보
+                  </h3>
+                  <div className="flex items-center justify-between bg-card px-4 py-3 rounded-xl border border-border">
+                    <div className="flex items-center gap-3">
+                      <UserRound className="w-4 h-4 text-muted-foreground" />
+                      <span className="font-medium text-[15px]">{adminId}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`아이디: ${adminId} / 비밀번호: ${adminPw}`);
+                        alert('복사되었습니다. 현장 스태프에게 전달해주세요.');
+                      }}
+                      className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1.5 rounded-lg active:scale-95 transition-all"
+                    >
+                      <Copy className="w-3.5 h-3.5 inline mr-1" /> 복사
+                    </button>
+                  </div>
+                  <div className="flex items-center bg-card px-4 py-3 rounded-xl border border-border gap-3">
+                    <KeyRound className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-medium text-[15px]">{adminPw}</span>
+                  </div>
+                </div>
+              )}
+            
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="w-full py-4 rounded-xl text-base font-bold text-primary-foreground bg-primary active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <Save className="w-5 h-5" />
+                {isSaving ? '저장 중...' : '저장하기'}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    </main>
+  );
+}

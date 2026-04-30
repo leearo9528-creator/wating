@@ -74,3 +74,36 @@ CREATE POLICY "Booth admins can update their booth's waiting list." ON waiting_l
 -- 7. Realtime í™œì„±í™” (Broadcast ìš©ë„)
 ALTER PUBLICATION supabase_realtime ADD TABLE booths;
 ALTER PUBLICATION supabase_realtime ADD TABLE waiting_list;
+-- 1000ëª??™ì‹œ ?‘ì† ?€ë¹? ?€ê¸?ë²ˆí˜¸ ?ˆì „ ë°œê¸‰ RPC (Race Condition ë°©ì?)
+CREATE OR REPLACE FUNCTION register_waitlist_v2(
+  p_booth_id UUID,
+  p_name TEXT,
+  p_count INTEGER
+) RETURNS jsonb AS $$
+DECLARE
+  v_next_number INTEGER;
+  v_inserted_id UUID;
+  v_result jsonb;
+BEGIN
+  -- ?™ì‹œ ?¤ë°œ?ì¸ ?”ì²­???¤ì–´?????´ë‹¹ ë¶€?¤ì˜ ë²ˆí˜¸??ë°œê¸‰???œì°¨?ìœ¼ë¡?ì²˜ë¦¬?˜ê¸° ?„í•´ Lock(? ê¸ˆ)??ê±?  PERFORM id FROM booths WHERE id = p_booth_id FOR UPDATE;
+
+  -- ê°€??ë§ˆì?ë§??€ê¸?ë²ˆí˜¸ë¥?ì¡°íšŒ?´ì„œ +1
+  SELECT COALESCE(MAX(waiting_number), 0) + 1 INTO v_next_number
+  FROM waiting_list
+  WHERE booth_id = p_booth_id;
+
+  -- ?€ê¸°í‘œ ?½ì…
+  INSERT INTO waiting_list (booth_id, name, count, waiting_number, status)
+  VALUES (p_booth_id, p_name, p_count, v_next_number, 'waiting')
+  RETURNING id INTO v_inserted_id;
+
+  -- ?½ì…???°ì´??ë°˜í™˜
+  v_result := jsonb_build_object(
+    'id', v_inserted_id,
+    'waiting_number', v_next_number
+  );
+
+  RETURN v_result;
+END;
+$$ LANGUAGE plpgsql;
+
