@@ -49,8 +49,7 @@ export function useAdminWaitingList(boothId: string) {
         schema: 'public',
         table: 'waiting_list',
         filter: `booth_id=eq.${boothId}`
-      }, (payload) => {
-        // Just refetch the whole list to simplify logic and ensure ordering
+      }, () => {
         fetchInitial();
       })
       .subscribe();

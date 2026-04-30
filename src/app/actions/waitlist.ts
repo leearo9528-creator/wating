@@ -25,9 +25,9 @@ export async function registerWaitlist(boothId: string, name: string, count: num
     if (!supabaseAdmin) {
       // Demo fallback if supabase is not initialized
       const currentNumber = dummyCounter++;
-      return { 
-        success: true, 
-        data: { id: `demo-id-${Date.now()}`, waiting_number: currentNumber } 
+      return {
+        success: true as const,
+        data: { id: `demo-id-${Date.now()}`, waiting_number: currentNumber }
       };
     }
 

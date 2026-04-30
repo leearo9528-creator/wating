@@ -51,7 +51,7 @@ export default function UserWaitingPage() {
     setIsSubmitting(true);
 
     const res = await registerWaitlist(boothId, name, partySize);
-    if (res.success && res.data) {
+    if (res.success) {
       setMyNumber(res.data.waiting_number);
       setMyWaitlistId(res.data.id);
       setViewState('confirmed');

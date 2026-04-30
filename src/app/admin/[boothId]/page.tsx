@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useAdminWaitingList } from '@/hooks/useAdminWaitingList';
 import { updateBoothInfo, getBoothSettings, uploadBoothPhoto } from '@/app/actions/admin';
 import { getBoothInfo } from '@/app/actions/waitlist';
@@ -10,7 +10,6 @@ import Link from 'next/link';
 
 export default function AdminPage() {
   const params = useParams();
-  const router = useRouter();
   const boothId = params.boothId as string;
 
   const { list } = useAdminWaitingList(boothId);
