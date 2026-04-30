@@ -50,7 +50,7 @@ export async function createBoothAdmin(email: string, password: string, boothId:
   }
 }
 
-export async function updateBoothInfo(boothId: string, updates: { name?: string, description?: string, photo_url?: string, status?: string, current_number?: number }) {
+export async function updateBoothInfo(boothId: string, updates: { name?: string, description?: string, photo_url?: string, status?: string, current_number?: number, close_at?: string | null, max_capacity?: number | null }) {
   try {
     if (!supabaseAdmin) throw new Error('Supabase client is not initialized');
 

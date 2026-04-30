@@ -25,6 +25,8 @@ export default function AdminPage() {
   const [status, setStatus] = useState('closed');
   const [adminId, setAdminId] = useState('');
   const [adminPw, setAdminPw] = useState('');
+  const [closeAt, setCloseAt] = useState('');
+  const [maxCapacity, setMaxCapacity] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,6 +44,8 @@ export default function AdminPage() {
         setCurrentNumber(res.data.current_number || 0);
         setAdminId(res.data.admin_login_id || '');
         setAdminPw(res.data.admin_login_pw || '');
+        setCloseAt(res.data.close_at ? (res.data.close_at as string).slice(0, 5) : '');
+        setMaxCapacity(res.data.max_capacity ? String(res.data.max_capacity) : '');
       }
       setIsLoading(false);
     };
@@ -70,7 +74,14 @@ export default function AdminPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    const res = await updateBoothInfo(boothId, { name, description, photo_url: photoUrl, status });
+    const res = await updateBoothInfo(boothId, {
+      name,
+      description,
+      photo_url: photoUrl,
+      status,
+      close_at: closeAt || null,
+      max_capacity: maxCapacity ? parseInt(maxCapacity, 10) : null,
+    });
     setIsSaving(false);
     if (res.success) {
       alert('저장되었습니다.');
@@ -370,6 +381,35 @@ export default function AdminPage() {
                 </div>
               </div>
             
+              {/* 자동 마감 설정 */}
+              <div className="rounded-xl bg-secondary p-4 space-y-4">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">자동 마감 설정</p>
+
+                <div>
+                  <label className="block text-sm font-semibold text-muted-foreground mb-1.5">마감 시각 (KST)</label>
+                  <input
+                    type="time"
+                    value={closeAt}
+                    onChange={e => setCloseAt(e.target.value)}
+                    className="w-full bg-card text-foreground px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-primary transition-all font-medium"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1.5">입력 시각이 되면 접수가 자동 마감됩니다. 비워두면 비활성화.</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-muted-foreground mb-1.5">최대 인원</label>
+                  <input
+                    type="number"
+                    value={maxCapacity}
+                    onChange={e => setMaxCapacity(e.target.value)}
+                    min={1}
+                    placeholder="무제한"
+                    className="w-full bg-card text-foreground px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-primary transition-all font-medium"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1.5">해당 인원 등록 시 접수가 자동 마감됩니다. 비워두면 무제한.</p>
+                </div>
+              </div>
+
               <button
                 type="submit"
                 disabled={isSaving}
