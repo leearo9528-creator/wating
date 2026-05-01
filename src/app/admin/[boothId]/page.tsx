@@ -92,7 +92,7 @@ export default function AdminPage() {
     if (res.success && res.url) {
       setPhotoUrl(res.url);
     } else {
-      alert('이미지 업로드에 실패했습니다.');
+      alert('이미지 업로드에 실패했습니다.' + (res.error ? `\n(${res.error})` : ''));
     }
   };
 
