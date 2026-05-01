@@ -17,7 +17,7 @@ export default function Home() {
           관리자 대시보드 <ArrowRight className="w-5 h-5" />
         </Link>
         <Link 
-          href="/123e4567-e89b-12d3-a456-426614174000"
+          href="/6b944751-5f95-4d62-ab94-1702e4721a27"
           className="w-full h-14 bg-card text-foreground font-bold text-lg rounded-2xl flex items-center justify-center hover:bg-card/80 transition-colors shadow-sm border border-border"
         >
           테스트 부스 구경하기

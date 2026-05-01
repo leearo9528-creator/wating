@@ -41,6 +41,19 @@ export default function UserWaitingPage() {
     };
     
     fetchBoothInfo();
+
+    const saved = localStorage.getItem(`waitlist_${boothId}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.id && parsed.number) {
+          setMyWaitlistId(parsed.id);
+          setMyNumber(parsed.number);
+          setViewState('confirmed');
+        }
+      } catch (e) {}
+    }
+    
     setMounted(true);
   }, [boothId]);
 
@@ -56,6 +69,10 @@ export default function UserWaitingPage() {
         setMyNumber(res.data.waiting_number);
         setMyWaitlistId(res.data.id);
         setViewState('confirmed');
+        localStorage.setItem(`waitlist_${boothId}`, JSON.stringify({
+          id: res.data.id,
+          number: res.data.waiting_number
+        }));
       }
     } else {
       alert('등록에 실패했습니다: ' + ('error' in res ? res.error : '알 수 없는 오류'));
@@ -232,6 +249,7 @@ export default function UserWaitingPage() {
           setViewState('register');
           setMyNumber(null);
           setMyWaitlistId(null);
+          localStorage.removeItem(`waitlist_${boothId}`);
         }}
       />
     </main>
