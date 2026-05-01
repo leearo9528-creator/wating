@@ -22,7 +22,7 @@ export function useAdminWaitingList(boothId: string) {
         .from('waiting_list')
         .select('*')
         .eq('booth_id', boothId)
-        .in('status', ['waiting', 'calling', 'cancelled'])
+        .in('status', ['waiting', 'calling', 'done', 'cancelled'])
         .order('waiting_number', { ascending: true });
 
       if (data) setList(data as WaitingListRow[]);
