@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabaseClient } from '@/lib/supabase-client';
 import { fetchAdminBooths } from '@/app/actions/dashboard';
-import { deleteBooth } from '@/app/actions/admin';
-import { Plus, Store, Settings, QrCode, LogOut, Trash2, Printer } from 'lucide-react';
+import { deleteBooth, bulkUpdateBoothStatus, resetAllBooths } from '@/app/actions/admin';
+import { Plus, Store, Settings, QrCode, LogOut, Trash2, Printer, RotateCcw } from 'lucide-react';
 
 interface Booth {
   id: string;
@@ -96,13 +96,65 @@ export default function DashboardPage() {
 
       <div className="mx-auto flex max-w-md flex-col gap-4 px-5 pt-6 pb-2">
         {role === 'super_admin' && (
-          <div className="flex justify-end mb-2">
-            <Link 
-              href="/dashboard/create" 
-              className="bg-primary text-primary-foreground text-sm font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+          <div className="space-y-3 mb-4">
+            {/* 새 부스 생성 */}
+            <div className="flex justify-end">
+              <Link 
+                href="/dashboard/create" 
+                className="bg-primary text-primary-foreground text-sm font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+              >
+                <Plus className="w-4 h-4" /> 새 부스 생성
+              </Link>
+            </div>
+
+            {/* 전체 상태 변경 */}
+            <div className="rounded-2xl bg-card p-4 shadow-sm border border-border">
+              <p className="text-xs font-bold text-muted-foreground mb-3">⚡ 전체 부스 상태 일괄 변경</p>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: 'closed', label: '전체 준비중', color: 'bg-muted text-muted-foreground' },
+                  { value: 'open', label: '전체 운영중', color: 'bg-green-100 text-green-700' },
+                  { value: 'paused', label: '전체 마감', color: 'bg-red-100 text-red-600' },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={async () => {
+                      if (!confirm(`모든 부스를 '${opt.label.replace('전체 ', '')}'으로 변경합니다.`)) return;
+                      const res = await bulkUpdateBoothStatus(opt.value);
+                      if (res.success) {
+                        setBooths(prev => prev.map(b => ({ ...b, status: opt.value })));
+                        alert('전체 상태가 변경되었습니다.');
+                      } else {
+                        alert('오류: ' + res.error);
+                      }
+                    }}
+                    className={`py-2.5 rounded-xl text-xs font-bold ${opt.color} active:scale-95 transition-all`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 전체 리셋 */}
+            <button
+              type="button"
+              onClick={async () => {
+                if (!confirm('⚠️ 전체 리셋\n\n모든 부스를 준비중으로 변경하고,\n진행 번호를 0으로 초기화하고,\n모든 대기 목록을 삭제합니다.\n\n정말 진행하시겠습니까?')) return;
+                if (!confirm('⚠️ 한번 더 확인합니다.\n이 작업은 되돌릴 수 없습니다.\n정말 전체 리셋하시겠습니까?')) return;
+                const res = await resetAllBooths();
+                if (res.success) {
+                  setBooths(prev => prev.map(b => ({ ...b, status: 'closed' })));
+                  alert('전체 리셋이 완료되었습니다.');
+                } else {
+                  alert('오류: ' + res.error);
+                }
+              }}
+              className="w-full py-3 rounded-2xl bg-red-50 text-red-600 font-bold text-sm border-2 border-dashed border-red-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             >
-              <Plus className="w-4 h-4" /> 새 부스 생성
-            </Link>
+              <RotateCcw className="w-4 h-4" /> 전체 리셋 (준비중 + 대기 0번 초기화)
+            </button>
           </div>
         )}
         {isLoading ? (

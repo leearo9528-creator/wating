@@ -33,7 +33,8 @@ export default function PrintPage() {
     );
   }
 
-  const boothUrl = `${origin}/${boothId}`;
+  const shortId = boothId.split('-')[0];
+  const boothUrl = `${origin}/${shortId}`;
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=0&data=${encodeURIComponent(boothUrl)}`;
 
   return (
@@ -137,10 +138,6 @@ export default function PrintPage() {
             />
           </div>
 
-          {/* URL */}
-          <p style={{ fontSize: '8pt', color: '#aaa', marginBottom: '8mm', letterSpacing: '0.3px', textAlign: 'center' }}>
-            {boothUrl}
-          </p>
 
           {/* 여백 채우기 */}
           <div style={{ flex: 1 }} />

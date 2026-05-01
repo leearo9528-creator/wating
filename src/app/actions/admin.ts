@@ -337,3 +337,47 @@ export async function generateBoothAdmin(boothId: string) {
     return { success: false as const, data: null, error: error.message };
   }
 }
+
+// 전체 부스 상태 일괄 변경
+export async function bulkUpdateBoothStatus(status: string) {
+  try {
+    if (!supabaseAdmin) throw new Error('Supabase client is not initialized');
+
+    const { error } = await supabaseAdmin
+      .from('booths')
+      .update({ status })
+      .neq('id', '00000000-0000-0000-0000-000000000000'); // 전체 업데이트
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    return { success: false as const, error: error.message };
+  }
+}
+
+// 전체 리셋: 준비중 + 번호 0 + 대기목록 전체 삭제
+export async function resetAllBooths() {
+  try {
+    if (!supabaseAdmin) throw new Error('Supabase client is not initialized');
+
+    // 1. 모든 부스를 준비중 + 번호 0으로
+    const { error: boothError } = await supabaseAdmin
+      .from('booths')
+      .update({ status: 'closed', current_number: 0 })
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    if (boothError) throw boothError;
+
+    // 2. 대기 목록 전체 삭제
+    const { error: waitlistError } = await supabaseAdmin
+      .from('waiting_list')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    if (waitlistError) throw waitlistError;
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false as const, error: error.message };
+  }
+}
