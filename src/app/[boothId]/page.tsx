@@ -167,13 +167,13 @@ export default function UserWaitingPage() {
             <form onSubmit={handleRegister} className="px-5 pb-6 pt-4 space-y-6">
               <div>
                 <label className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground mb-2">
-                  <UserRound className="w-4 h-4" /> 이름
+                  <UserRound className="w-4 h-4" /> 성함
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="이름 입력"
+                  placeholder="성함 입력"
                   required
                   className="w-full bg-secondary text-foreground px-4 py-3.5 rounded-xl outline-none focus:ring-2 focus:ring-primary transition-all font-medium"
                 />

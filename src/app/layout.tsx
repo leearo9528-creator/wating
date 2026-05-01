@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "FLIT Union Wait | 행사 부스 웨이팅",
-  description: "줄 서지 말고, 등록하세요. FLIT Union Wait으로 스마트한 행사 대기 경험을 시작하세요.",
+  title: "행사 체험 부스 대기 시스템",
+  description: "행사 체험 부스 대기 시스템",
 };
 
 export const viewport: Viewport = {
