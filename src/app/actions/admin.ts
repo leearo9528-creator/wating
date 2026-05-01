@@ -63,6 +63,27 @@ export async function updateBoothInfo(boothId: string, updates: { name?: string,
 
     if (error) throw error;
 
+    // 번호 진행 시 대기자 상태도 함께 업데이트 (Realtime 트리거용)
+    if (updates.current_number !== undefined) {
+      const num = updates.current_number;
+
+      // 현재 번호보다 앞 = 완료 처리
+      await supabaseAdmin
+        .from('waiting_list')
+        .update({ status: 'done' })
+        .eq('booth_id', boothId)
+        .lt('waiting_number', num)
+        .in('status', ['waiting', 'calling']);
+
+      // 현재 번호 = 호출 중
+      await supabaseAdmin
+        .from('waiting_list')
+        .update({ status: 'calling' })
+        .eq('booth_id', boothId)
+        .eq('waiting_number', num)
+        .eq('status', 'waiting');
+    }
+
     return { success: true, data };
   } catch (error: any) {
     return { success: false as const, data: null, error: error.message };
