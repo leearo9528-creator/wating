@@ -7,10 +7,7 @@ export default function Home() {
       <div className="w-16 h-16 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center mb-6 shadow-sm">
         <Sparkles className="w-8 h-8" />
       </div>
-      <h1 className="text-3xl font-bold tracking-tight text-foreground mb-3">FLIT Union Wait</h1>
-      <p className="text-muted-foreground text-base max-w-[280px] mb-10 leading-relaxed">
-        초경량/고효율 행사 부스 웨이팅 서비스. 복잡한 절차 없이 QR코드 하나로 대기열을 관리하세요.
-      </p>
+      <h1 className="text-3xl font-bold tracking-tight text-foreground mb-10">행사 체험 부스 대기 시스템</h1>
 
       <div className="flex flex-col w-full max-w-sm gap-3">
         <Link 
