@@ -163,10 +163,9 @@ export async function resolveBoothId(shortId: string): Promise<string | null> {
   
   const { data } = await supabaseAdmin
     .from('booths')
-    .select('id')
-    .ilike('id', `${shortId}%`)
-    .limit(1)
-    .single();
+    .select('id');
 
-  return data?.id || null;
+  if (!data) return null;
+  const match = data.find(b => b.id.startsWith(shortId));
+  return match?.id || null;
 }
