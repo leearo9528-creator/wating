@@ -134,3 +134,23 @@ export async function getBoothInfo(boothId: string) {
     return { success: false as const, data: null, error: error.message };
   }
 }
+
+export async function getWaitlistStatus(boothId: string, myWaitingNumber: number) {
+  try {
+    if (!supabaseAdmin) throw new Error('Supabase client is not initialized');
+
+    // 내 앞에 대기 중이거나 호출 중인 사람의 정확한 수를 계산
+    const { count, error } = await supabaseAdmin
+      .from('waiting_list')
+      .select('*', { count: 'exact', head: true })
+      .eq('booth_id', boothId)
+      .in('status', ['waiting', 'calling'])
+      .lt('waiting_number', myWaitingNumber);
+
+    if (error) throw error;
+    
+    return { success: true, peopleAhead: count || 0 };
+  } catch (error: any) {
+    return { success: false as const, peopleAhead: 0 };
+  }
+}
