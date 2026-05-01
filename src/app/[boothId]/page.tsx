@@ -58,7 +58,7 @@ export default function UserWaitingPage() {
         setViewState('confirmed');
       }
     } else {
-      alert('등록에 실패했습니다: ' + (res as any).error);
+      alert('등록에 실패했습니다: ' + ('error' in res ? res.error : '알 수 없는 오류'));
     }
     
     setIsSubmitting(false);
@@ -105,12 +105,12 @@ export default function UserWaitingPage() {
                   <Store className="w-8 h-8 text-muted-foreground" />
                 </div>
                 <h2 className="text-xl font-bold tracking-tight mb-2">
-                  {boothInfo.status === 'closed' ? '운영 준비 중입니다' : '웨이팅 접수가 마감되었습니다'}
+                  {boothInfo.status === 'closed' ? '대기 접수 준비 중입니다' : '대기 접수가 마감되었습니다'}
                 </h2>
                 <p className="text-sm text-muted-foreground">
                   {boothInfo.status === 'closed' 
-                    ? '아직 대기 접수가 시작되지 않았습니다.' 
-                    : '오늘의 웨이팅 접수가 마감되었습니다.'}
+                    ? '아직 대기 접수가 시작되지 않았습니다. \n잠시 후 다시 확인해주세요.' 
+                    : '오늘의 대기 접수가 마감되었습니다.'}
                 </p>
                 {boothInfo.status === 'closed' && boothInfo.open_time && (
                   <p className="text-sm font-bold text-foreground mt-3">

@@ -1,8 +1,11 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache, revalidateTag } from 'next/cache'
 
+type RegisterResult =
+  | { success: true; data: { id: string; waiting_number: number } }
+  | { success: false; data: null; error: string };
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -20,113 +23,58 @@ const supabaseAdmin = supabaseUrl.startsWith('http') && supabaseKey ? createClie
 
 let dummyCounter = 1;
 
-export async function registerWaitlist(boothId: string, name: string, count: number) {
+// 현재 KST 기준 분(minute) 반환
+function kstMinutes(): number {
+  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  return kst.getUTCHours() * 60 + kst.getUTCMinutes();
+}
+
+// 등록 후 인원 초과 여부 확인 → 자동 마감
+async function checkCapacityAutoClose(boothId: string) {
+  if (!supabaseAdmin) return;
+
+  const { data: booth } = await supabaseAdmin
+    .from('booths')
+    .select('status, max_capacity')
+    .eq('id', boothId)
+    .single();
+
+  if (!booth || booth.status !== 'open' || !booth.max_capacity) return;
+
+  const { count } = await supabaseAdmin
+    .from('waiting_list')
+    .select('*', { count: 'exact', head: true })
+    .eq('booth_id', boothId)
+    .neq('status', 'cancelled');
+
+  if ((count ?? 0) >= booth.max_capacity) {
+    await supabaseAdmin.from('booths').update({ status: 'paused' }).eq('id', boothId);
+    revalidateTag('booth');
+  }
+}
+
+export async function registerWaitlist(boothId: string, name: string, count: number): Promise<RegisterResult> {
   try {
     if (!supabaseAdmin) {
-      // Demo fallback if supabase is not initialized
       const currentNumber = dummyCounter++;
-      return { 
-        success: true, 
-        data: { id: `demo-id-${Date.now()}`, waiting_number: currentNumber } 
+      return {
+        success: true as const,
+        data: { id: `demo-id-${Date.now()}`, waiting_number: currentNumber }
       };
     }
 
-    // Call the Postgres RPC function which handles table locks and safe insertion
     const { data, error } = await supabaseAdmin.rpc('register_waitlist_v2', {
       p_booth_id: boothId,
       p_name: name,
       p_count: count
     });
 
-    if (error) {
-      // If RPC doesn't exist yet, fallback to original logic for backwards compatibility
-      if (error.code === 'PGRST202' || error.message?.includes('Could not find the function')) {
-        console.warn('RPC not found, falling back to JS-based insertion.');
-        return await registerWaitlistFallback(boothId, name, count);
-      }
-      throw error;
-    }
-
-    return { success: true as const, data };
-  } catch (error: any) {
-    return { success: false as const, data: null, error: error.message };
-  }
-}
-
-// Original unsafe logic as fallback just in case SQL is not run yet
-async function registerWaitlistFallback(boothId: string, name: string, count: number) {
-  const { data: maxData } = await supabaseAdmin!
-    .from('waiting_list')
-    .select('waiting_number')
-    .eq('booth_id', boothId)
-    .order('waiting_number', { ascending: false })
-    .limit(1);
-
-  const nextNumber = maxData && maxData.length > 0 ? maxData[0].waiting_number + 1 : 1;
-
-  const { data, error } = await supabaseAdmin!.from('waiting_list').insert({
-    booth_id: boothId,
-    name,
-    count,
-    waiting_number: nextNumber,
-    status: 'waiting'
-  }).select().single();
-
-  if (error) throw error;
-  return { success: true, data };
-}
-
-export async function callWaitlist(id: string, boothId: string) {
-  try {
-    if (!supabaseAdmin) throw new Error('Supabase client is not initialized');
-
-    // Get the current item to check its waiting_number
-    const { data: targetItem, error: fetchError } = await supabaseAdmin
-      .from('waiting_list')
-      .select('waiting_number')
-      .eq('id', id)
-      .single();
-
-    if (fetchError) throw fetchError;
-
-    // Update the item to 'calling'
-    const { data, error } = await supabaseAdmin
-      .from('waiting_list')
-      .update({ status: 'calling' })
-      .eq('id', id)
-      .select()
-      .single();
-
     if (error) throw error;
 
-    // Update booth's current_number to match the called user
-    const { error: boothError } = await supabaseAdmin
-      .from('booths')
-      .update({ current_number: targetItem.waiting_number })
-      .eq('id', boothId);
+    // 등록 성공 후 인원 초과 체크 (비동기, 응답 블로킹 없음)
+    checkCapacityAutoClose(boothId).catch(() => {});
 
-    if (boothError) throw boothError;
-
-    return { success: true, data };
-  } catch (error: any) {
-    return { success: false as const, data: null, error: error.message };
-  }
-}
-
-export async function completeWaitlist(id: string) {
-  try {
-    if (!supabaseAdmin) throw new Error('Supabase client is not initialized');
-
-    const { data, error } = await supabaseAdmin
-      .from('waiting_list')
-      .update({ status: 'done' })
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return { success: true, data };
+    return { success: true as const, data: data as { id: string; waiting_number: number } };
   } catch (error: any) {
     return { success: false as const, data: null, error: error.message };
   }
@@ -156,7 +104,7 @@ const getCachedBoothData = unstable_cache(
     if (!supabaseAdmin) throw new Error('Supabase client is not initialized');
     const { data, error } = await supabaseAdmin
       .from('booths')
-      .select('name, description, current_number, status, photo_url, open_time, close_time, max_capacity')
+      .select('name, description, current_number, status, photo_url, close_at, max_capacity')
       .eq('id', boothId)
       .single();
     if (error) throw error;
@@ -168,8 +116,19 @@ const getCachedBoothData = unstable_cache(
 
 export async function getBoothInfo(boothId: string) {
   try {
-    // This will hit the Vercel cache and only query DB once every 3 seconds max
     const data = await getCachedBoothData(boothId);
+
+    // 시간 자동 마감 체크 (캐시 데이터 기반 산술 연산, 추가 DB 읽기 없음)
+    if (data.status === 'open' && data.close_at) {
+      const [h, m] = (data.close_at as string).split(':').map(Number);
+      if (kstMinutes() >= h * 60 + m) {
+        // 비동기 DB 업데이트 (응답 블로킹 없음)
+        supabaseAdmin?.from('booths').update({ status: 'paused' }).eq('id', boothId);
+        revalidateTag('booth');
+        return { success: true, data: { ...data, status: 'paused' } };
+      }
+    }
+
     return { success: true, data };
   } catch (error: any) {
     return { success: false as const, data: null, error: error.message };
