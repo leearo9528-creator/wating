@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useAdminWaitingList } from '@/hooks/useAdminWaitingList';
 import { updateBoothInfo, getBoothSettings, uploadBoothPhoto, generateBoothAdmin } from '@/app/actions/admin';
-import { getBoothInfo } from '@/app/actions/waitlist';
 import { Plus, Minus, Megaphone, ArrowLeft, Save, Copy, KeyRound, UserRound, ImagePlus, ChevronDown, ChevronUp, Printer } from 'lucide-react';
 import Link from 'next/link';
 
@@ -52,23 +51,11 @@ export default function AdminPage() {
     fetchBooth();
   }, [boothId]);
 
-  // Poll current_number
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      const res = await getBoothInfo(boothId);
-      if (res.success && res.data) {
-        setCurrentNumber(res.data.current_number);
-      }
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [boothId]);
-
-  const handleUpdateNumber = async (newNumber: number) => {
-    if (newNumber < 0) return;
-    setIsUpdating(true);
+  // 번호 변경: 낙관적 업데이트 (UI 먼저, DB는 백그라운드)
+  const handleUpdateNumber = (newNumber: number) => {
+    if (newNumber < 0 || isUpdating) return;
     setCurrentNumber(newNumber);
-    await updateBoothInfo(boothId, { current_number: newNumber });
-    setIsUpdating(false);
+    updateBoothInfo(boothId, { current_number: newNumber });
   };
 
   const handleSave = async (e: React.FormEvent) => {
