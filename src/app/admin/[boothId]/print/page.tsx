@@ -35,7 +35,7 @@ export default function PrintPage() {
 
   const shortId = boothId.split('-')[0];
   const boothUrl = `${origin}/${shortId}`;
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=0&data=${encodeURIComponent(boothUrl)}`;
+  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=800x800&margin=0&data=${encodeURIComponent(boothUrl)}`;
 
   return (
     <>
@@ -65,26 +65,46 @@ export default function PrintPage() {
         </button>
       </div>
 
-      {/* A4 미리보기 영역 */}
+      {/* A4 배경 */}
       <div className="no-print min-h-screen bg-gray-200 flex justify-center py-10 px-4" />
 
-      {/* A4 본문 — screen에선 절대 위치로 미리보기, print에선 자연스럽게 */}
+      {/* A4 본문 */}
       <div className="flex justify-center bg-gray-200 print:bg-white print:block">
         <div
           className="print-page bg-white shadow-2xl print:shadow-none"
           style={{
             width: '210mm',
             minHeight: '297mm',
-            padding: '14mm 18mm 14mm',
+            padding: '12mm 16mm',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             boxSizing: 'border-box',
           }}
         >
+          {/* 상단: 부스명 */}
+          <h1 style={{
+            fontSize: '34pt',
+            fontWeight: 900,
+            letterSpacing: '-0.5px',
+            textAlign: 'center',
+            lineHeight: 1.2,
+            color: '#111',
+            marginBottom: '6mm',
+            marginTop: '2mm',
+          }}>
+            {booth.name}
+          </h1>
+
           {/* 부스 사진 */}
           {booth.photo_url && (
-            <div style={{ width: '100%', height: '52mm', borderRadius: '10px', overflow: 'hidden', marginBottom: '9mm' }}>
+            <div style={{
+              width: '100%',
+              height: '48mm',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              marginBottom: '8mm',
+            }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={booth.photo_url}
@@ -94,71 +114,73 @@ export default function PrintPage() {
             </div>
           )}
 
-          {/* 부스명 */}
-          <h1 style={{
-            fontSize: '30pt',
-            fontWeight: 800,
-            letterSpacing: '-0.5px',
-            textAlign: 'center',
-            lineHeight: 1.2,
-            marginBottom: booth.description ? '4mm' : '10mm',
-            color: '#111',
-          }}>
-            {booth.name}
-          </h1>
-
-          {/* 위치/설명 */}
+          {/* 위치 안내 */}
           {booth.description && (
-            <p style={{ fontSize: '13pt', color: '#555', textAlign: 'center', marginBottom: '10mm', lineHeight: 1.5 }}>
+            <p style={{
+              fontSize: '13pt',
+              color: '#555',
+              textAlign: 'center',
+              marginBottom: '6mm',
+              lineHeight: 1.5,
+            }}>
               📍 {booth.description}
             </p>
           )}
 
           {/* 구분선 */}
-          <div style={{ width: '36mm', height: '1.5px', background: '#e0e0e0', marginBottom: '10mm' }} />
+          <div style={{ width: '40mm', height: '1.5px', background: '#e0e0e0', marginBottom: '7mm' }} />
 
           {/* 안내 문구 */}
-          <p style={{ fontSize: '12pt', fontWeight: 600, color: '#333', textAlign: 'center', marginBottom: '7mm' }}>
-            QR 코드를 스캔하여 웨이팅을 등록하세요
+          <p style={{
+            fontSize: '14pt',
+            fontWeight: 700,
+            color: '#222',
+            textAlign: 'center',
+            marginBottom: '8mm',
+          }}>
+            QR 코드를 스캔하여 대기를 등록하세요
           </p>
 
-          {/* QR 코드 */}
+          {/* QR 코드 - 크게 정 가운데 */}
           <div style={{
-            padding: '5mm',
-            border: '1.5px solid #e0e0e0',
-            borderRadius: '14px',
-            marginBottom: '5mm',
-            background: '#fff',
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
           }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={qrSrc}
-              alt="웨이팅 QR 코드"
-              style={{ width: '72mm', height: '72mm', display: 'block' }}
-            />
+            <div style={{
+              padding: '6mm',
+              border: '2px solid #e0e0e0',
+              borderRadius: '16px',
+              background: '#fff',
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={qrSrc}
+                alt="웨이팅 QR 코드"
+                style={{ width: '100mm', height: '100mm', display: 'block' }}
+              />
+            </div>
           </div>
 
-
-          {/* 여백 채우기 */}
-          <div style={{ flex: 1 }} />
-
-          {/* 안내 푸터 */}
+          {/* 하단 안내 */}
           <div style={{
             width: '100%',
             borderTop: '1px solid #ebebeb',
-            paddingTop: '7mm',
-            marginTop: '4mm',
+            paddingTop: '6mm',
+            marginTop: '6mm',
           }}>
-            <p style={{ fontSize: '10pt', fontWeight: 700, color: '#444', textAlign: 'center', marginBottom: '5mm' }}>
+            <p style={{ fontSize: '10pt', fontWeight: 700, color: '#444', textAlign: 'center', marginBottom: '4mm' }}>
               💡 웨이팅 이용 안내
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3mm' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2mm' }}>
               {[
                 '현장 상황에 따라 대기 접수가 조기 마감될 수 있습니다.',
                 '실제 입장 시간은 상황에 따라 앞당겨지거나 지연될 수 있습니다.',
                 '모든 방문자가 체험할 수 있도록 너그러운 양해 부탁드립니다.',
               ].map((text, i) => (
-                <p key={i} style={{ fontSize: '10pt', color: '#666', textAlign: 'center', lineHeight: 1.6, margin: 0 }}>
+                <p key={i} style={{ fontSize: '9pt', color: '#888', textAlign: 'center', lineHeight: 1.6, margin: 0 }}>
                   · {text}
                 </p>
               ))}
