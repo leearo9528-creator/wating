@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { supabaseClient } from '@/lib/supabase-client';
 import { fetchAdminBooths } from '@/app/actions/dashboard';
 import { deleteBooth } from '@/app/actions/admin';
-import { Plus, Store, Settings, QrCode, LogOut, Trash2 } from 'lucide-react';
+import { Plus, Store, Settings, QrCode, LogOut, Trash2, Printer } from 'lucide-react';
 
 interface Booth {
   id: string;
@@ -127,19 +127,26 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-2 mt-2">
+                <div className="grid grid-cols-3 gap-2 mt-2">
                   <Link 
                     href={`/admin/${booth.id}`}
-                    className="py-3 bg-primary text-primary-foreground text-center font-bold text-[14px] rounded-xl flex items-center justify-center gap-1.5"
+                    className="py-3 bg-primary text-primary-foreground text-center font-bold text-[13px] rounded-xl flex items-center justify-center gap-1"
                   >
-                    <Settings className="w-4 h-4" /> 관리하기
+                    <Settings className="w-4 h-4" /> 관리
                   </Link>
                   <Link 
-                    href={`/${booth.id}`}
+                    href={`/${booth.id.split('-')[0]}`}
                     target="_blank"
-                    className="py-3 bg-secondary text-foreground text-center font-bold text-[14px] rounded-xl border border-border flex items-center justify-center gap-1.5 hover:bg-secondary/80"
+                    className="py-3 bg-secondary text-foreground text-center font-bold text-[13px] rounded-xl border border-border flex items-center justify-center gap-1 hover:bg-secondary/80"
                   >
-                    <QrCode className="w-4 h-4" /> 웨이팅 링크
+                    <QrCode className="w-4 h-4" /> 링크
+                  </Link>
+                  <Link 
+                    href={`/admin/${booth.id}/print`}
+                    target="_blank"
+                    className="py-3 bg-secondary text-foreground text-center font-bold text-[13px] rounded-xl border border-border flex items-center justify-center gap-1 hover:bg-secondary/80"
+                  >
+                    <Printer className="w-4 h-4" /> 출력
                   </Link>
                 </div>
                 {role === 'super_admin' && (
