@@ -4,13 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useWaitingStatus } from '@/hooks/useWaitingStatus';
 import { registerWaitlist, cancelWaitlist, getBoothInfo } from '@/app/actions/waitlist';
-import { supabaseClient } from '@/lib/supabase-client';
-
-// V0 Components
-// import { BoothHeader } from "@/components/booth-header"
 import { WaitingHero } from "@/components/waiting-hero"
 import { ActionBar } from "@/components/action-bar"
-import { UserRound, Users, ChevronRight, Store, Sparkles } from 'lucide-react';
+import { UserRound, Users, Store } from 'lucide-react';
 
 type ViewState = 'register' | 'confirmed';
 
@@ -226,33 +222,18 @@ export default function UserWaitingPage() {
 
   return (
     <main className="min-h-dvh bg-secondary pb-24">
-      <div className="mx-auto flex max-w-md flex-col gap-5 px-5 pt-12 pb-4">
-        {/* 부스 상단 정보: 이름, 사진, 위치 */}
+      {/* 캡처 안내 - 최상단 고정 배너 */}
+      <div className="bg-primary text-primary-foreground py-4 px-5 text-center">
+        <p className="text-base font-black tracking-tight">📸 지금 바로 이 화면을 캡처해 주세요!</p>
+        <p className="text-sm mt-1 opacity-90">새로고침 시 대기표가 사라질 수 있습니다</p>
+      </div>
+
+      <div className="mx-auto flex max-w-md flex-col gap-5 px-5 pt-8 pb-4">
+        {/* 부스 상단 정보 */}
         <div className="flex flex-col gap-5 mb-4 text-center">
           <h1 className="text-3xl font-black tracking-tight text-foreground">
             {boothInfo?.name || "로딩중..."}
           </h1>
-          
-          {boothInfo?.photo_url && (
-            <div className="rounded-2xl bg-card shadow-sm border border-border overflow-hidden">
-              <div className="aspect-[4/3] w-full bg-muted">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={boothInfo.photo_url} alt={boothInfo.name} className="w-full h-full object-cover" />
-              </div>
-            </div>
-          )}
-
-          {boothInfo?.description && (
-            <div className="rounded-2xl bg-card shadow-sm border border-border px-5 py-4 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-lg">
-                📍
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">위치 안내</p>
-                <p className="text-[15px] text-foreground font-bold">{boothInfo.description}</p>
-              </div>
-            </div>
-          )}
         </div>
 
         <WaitingHero
@@ -261,11 +242,7 @@ export default function UserWaitingPage() {
           status={peopleAhead <= 0 ? 'called' : peopleAhead <= 3 ? 'soon' : 'waiting'}
         />
 
-        <p className="px-2 pt-2 pb-1 text-center text-[11px] text-muted-foreground">
-          마지막 업데이트 · 방금 전
-        </p>
-
-        <NoticeSection showCaptureWarning />
+        <NoticeSection />
       </div>
 
       <ActionBar
