@@ -27,7 +27,7 @@ export default function UserWaitingPage() {
   const [mounted, setMounted] = useState(false);
   const [boothInfo, setBoothInfo] = useState<{name: string, description: string, status?: string, photo_url?: string, open_time?: string, close_time?: string, max_capacity?: number} | null>(null);
 
-  const { currentCallingNumber, peopleAhead } = useWaitingStatus(boothId, myNumber);
+  const { peopleAhead } = useWaitingStatus(boothId, myNumber);
 
   useEffect(() => {
     const fetchBoothInfo = async () => {
