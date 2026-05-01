@@ -97,8 +97,15 @@ export default function DashboardPage() {
       <div className="mx-auto flex max-w-md flex-col gap-4 px-5 pt-6 pb-2">
         {role === 'super_admin' && (
           <div className="space-y-3 mb-4">
-            {/* 새 부스 생성 */}
-            <div className="flex justify-end">
+            {/* 새 부스 생성 + 전체 출력 */}
+            <div className="flex justify-end gap-2">
+              <Link 
+                href="/dashboard/print-all"
+                target="_blank"
+                className="bg-secondary text-foreground text-sm font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 border border-border hover:bg-secondary/80 transition-colors"
+              >
+                <Printer className="w-4 h-4" /> 전체 출력
+              </Link>
               <Link 
                 href="/dashboard/create" 
                 className="bg-primary text-primary-foreground text-sm font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 hover:opacity-90 transition-opacity"
