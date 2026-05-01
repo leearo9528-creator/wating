@@ -253,18 +253,18 @@ export default function AdminPage() {
           <p className="text-sm font-bold text-muted-foreground mb-3">📎 방문자 웨이팅 링크</p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${typeof window !== 'undefined' ? window.location.origin : ''}/${boothId}`} 
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${typeof window !== 'undefined' ? window.location.origin : ''}/${boothId.split('-')[0]}`} 
             alt="QR Code"
             className="mx-auto w-48 h-48 rounded-xl border border-border mb-3"
           />
           <p className="text-xs text-muted-foreground mb-3 break-all">
-            {typeof window !== 'undefined' ? `${window.location.origin}/${boothId}` : ''}
+            {typeof window !== 'undefined' ? `${window.location.origin}/${boothId.split('-')[0]}` : ''}
           </p>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => {
-                const url = `${window.location.origin}/${boothId}`;
+                const url = `${window.location.origin}/${boothId.split('-')[0]}`;
                 navigator.clipboard.writeText(url);
                 alert('링크가 복사되었습니다!');
               }}
@@ -274,7 +274,7 @@ export default function AdminPage() {
             </button>
             <button
               type="button"
-              onClick={() => window.open(`/${boothId}`, '_blank')}
+              onClick={() => window.open(`/${boothId.split('-')[0]}`, '_blank')}
               className="flex-1 py-2.5 bg-primary/10 text-primary font-bold text-sm rounded-xl active:scale-[0.98] transition-all"
             >
               미리보기
@@ -297,7 +297,24 @@ export default function AdminPage() {
                 type="button"
                 onClick={() => {
                   const loginUrl = `${window.location.origin}/login`;
-                  navigator.clipboard.writeText(`[${name}] 부스 관리자 계정\n아이디: ${adminId}\n비밀번호: ${adminPw}\n접속링크: ${loginUrl}`);
+                  const guideText = `[${name}] 부스 관리자 계정
+
+▶ 로그인 정보
+아이디: ${adminId}
+비밀번호: ${adminPw}
+접속링크: ${loginUrl}
+
+▶ 사용법
+1. 위 링크로 접속 → 아이디/비밀번호 입력 → 로그인
+2. 대시보드에서 부스 선택
+3. 운영 상태를 \'운영중\'으로 변경해야 대기 접수가 시작됩니다
+4. +/- 버튼으로 현재 진행 번호를 조절하세요
+5. 대기 현황에서 실시간으로 대기자 목록을 확인할 수 있습니다
+
+▶ 부스 설정 (하단 ⚙️ 부스 설정 클릭)
+- 부스 이름/안내문구/사진 변경 가능
+- 마감 시각/최대 인원 설정으로 자동 마감 가능`;
+                  navigator.clipboard.writeText(guideText);
                   alert('복사되었습니다. 현장 스태프에게 전달해주세요.');
                 }}
                 className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1.5 rounded-lg active:scale-95 transition-all"

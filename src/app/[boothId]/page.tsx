@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useWaitingStatus } from '@/hooks/useWaitingStatus';
-import { registerWaitlist, cancelWaitlist, getBoothInfo } from '@/app/actions/waitlist';
+import { registerWaitlist, cancelWaitlist, getBoothInfo, resolveBoothId } from '@/app/actions/waitlist';
 import { WaitingHero } from "@/components/waiting-hero"
 import { ActionBar } from "@/components/action-bar"
 import { UserRound, Users, Store } from 'lucide-react';
@@ -36,8 +36,9 @@ function NoticeSection({ showCaptureWarning = false }: { showCaptureWarning?: bo
 
 export default function UserWaitingPage() {
   const params = useParams();
-  const boothId = params.boothId as string;
+  const rawBoothId = params.boothId as string;
 
+  const [boothId, setBoothId] = useState(rawBoothId);
   const [name, setName] = useState('');
   const [partySize, setPartySize] = useState(1);
   const [viewState, setViewState] = useState<ViewState>('register');
@@ -50,32 +51,34 @@ export default function UserWaitingPage() {
   const { peopleAhead } = useWaitingStatus(boothId, myNumber);
 
   useEffect(() => {
-    const fetchBoothInfo = async () => {
-      const res = await getBoothInfo(boothId);
-        
+    const init = async () => {
+      // 짧은 ID면 전체 UUID로 변환
+      const resolvedId = await resolveBoothId(rawBoothId);
+      const finalId = resolvedId || rawBoothId;
+      setBoothId(finalId);
+
+      const res = await getBoothInfo(finalId);
       if (res.success && res.data) {
         setBoothInfo(res.data);
       } else {
         setBoothInfo({ name: '알 수 없는 부스', description: '' });
       }
-    };
-    
-    fetchBoothInfo();
 
-    const saved = localStorage.getItem(`waitlist_${boothId}`);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.id && parsed.number) {
-          setMyWaitlistId(parsed.id);
-          setMyNumber(parsed.number);
-          setViewState('confirmed');
-        }
-      } catch (e) {}
-    }
-    
-    setMounted(true);
-  }, [boothId]);
+      const saved = localStorage.getItem(`waitlist_${finalId}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.id && parsed.number) {
+            setMyWaitlistId(parsed.id);
+            setMyNumber(parsed.number);
+            setViewState('confirmed');
+          }
+        } catch (e) {}
+      }
+      setMounted(true);
+    };
+    init();
+  }, [rawBoothId]);
 
   const handleRegister = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();

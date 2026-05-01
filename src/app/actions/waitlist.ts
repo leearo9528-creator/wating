@@ -154,3 +154,19 @@ export async function getWaitlistStatus(boothId: string, myWaitingNumber: number
     return { success: false as const, peopleAhead: 0 };
   }
 }
+
+// 짧은 ID(UUID 앞부분)로 전체 부스 ID를 조회
+export async function resolveBoothId(shortId: string): Promise<string | null> {
+  if (!supabaseAdmin) return null;
+  // 이미 완전한 UUID면 그대로 반환
+  if (shortId.includes('-') && shortId.length > 20) return shortId;
+  
+  const { data } = await supabaseAdmin
+    .from('booths')
+    .select('id')
+    .ilike('id', `${shortId}%`)
+    .limit(1)
+    .single();
+
+  return data?.id || null;
+}
