@@ -7,21 +7,47 @@ export function useWaitingStatus(boothId: string, myWaitingNumber: number | null
   useEffect(() => {
     if (!boothId || !myWaitingNumber || !supabaseClient) return;
 
-    const fetchAhead = async () => {
-      const { count } = await supabaseClient!
-        .from('waiting_list')
-        .select('*', { count: 'exact', head: true })
-        .eq('booth_id', boothId)
-        .in('status', ['waiting', 'calling'])
-        .lt('waiting_number', myWaitingNumber);
+    let cancelled = false;
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let inflight = false;
+    let pending = false;
 
-      setPeopleAhead(count ?? 0);
+    const fetchAhead = async () => {
+      if (cancelled) return;
+      if (inflight) { pending = true; return; }
+      inflight = true;
+      try {
+        const { count } = await supabaseClient!
+          .from('waiting_list')
+          .select('*', { count: 'exact', head: true })
+          .eq('booth_id', boothId)
+          .in('status', ['waiting', 'calling'])
+          .lt('waiting_number', myWaitingNumber);
+
+        if (!cancelled) setPeopleAhead(count ?? 0);
+      } finally {
+        inflight = false;
+        if (pending && !cancelled) {
+          pending = false;
+          fetchAhead();
+        }
+      }
+    };
+
+    // 변경 burst를 합쳐서 짧은 윈도우 내에 한 번만 재조회
+    // (200ms 이내 사용자에게는 사실상 즉시 반영되어 보임)
+    const scheduleFetch = () => {
+      if (debounceTimer) return;
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null;
+        fetchAhead();
+      }, 200);
     };
 
     // 초기 로딩
     fetchAhead();
 
-    // Supabase Realtime: DB 변경 시 즉시 반영
+    // Supabase Realtime: DB 변경 시 즉시 반영 (debounced)
     const channel = supabaseClient
       .channel(`user-waiting-${boothId}-${myWaitingNumber}`)
       .on('postgres_changes', {
@@ -30,11 +56,13 @@ export function useWaitingStatus(boothId: string, myWaitingNumber: number | null
         table: 'waiting_list',
         filter: `booth_id=eq.${boothId}`
       }, () => {
-        fetchAhead();
+        scheduleFetch();
       })
       .subscribe();
 
     return () => {
+      cancelled = true;
+      if (debounceTimer) clearTimeout(debounceTimer);
       supabaseClient!.removeChannel(channel);
     };
   }, [boothId, myWaitingNumber]);
