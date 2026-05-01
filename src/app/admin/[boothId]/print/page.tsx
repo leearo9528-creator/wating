@@ -84,14 +84,14 @@ export default function PrintPage() {
         >
           {/* 상단: 부스명 */}
           <h1 style={{
-            fontSize: '34pt',
+            fontSize: '24pt',
             fontWeight: 900,
             letterSpacing: '-0.5px',
             textAlign: 'center',
             lineHeight: 1.2,
             color: '#111',
-            marginBottom: '6mm',
-            marginTop: '2mm',
+            marginBottom: '5mm',
+            marginTop: '0',
           }}>
             {booth.name}
           </h1>
@@ -100,10 +100,10 @@ export default function PrintPage() {
           {booth.photo_url && (
             <div style={{
               width: '100%',
-              height: '48mm',
+              height: '100mm',
               borderRadius: '12px',
               overflow: 'hidden',
-              marginBottom: '8mm',
+              marginBottom: '5mm',
             }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
