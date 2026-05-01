@@ -14,6 +14,30 @@ import { UserRound, Users, ChevronRight, Store, Sparkles } from 'lucide-react';
 
 type ViewState = 'register' | 'confirmed';
 
+function NoticeSection({ showCaptureWarning = false }: { showCaptureWarning?: boolean }) {
+  return (
+    <div className="mt-2 px-4 py-5 bg-card/50 rounded-2xl border border-border/50 text-[13px] text-muted-foreground leading-relaxed space-y-3 break-keep">
+      <p>
+        <strong className="text-foreground block mb-1">함께 만드는 안전한 축제!</strong>
+        이 번호표는 안전사고 예방을 위한 장치로, 상황에 따라 입장이 조금 늦어지거나 앞당겨질 수 있습니다.
+      </p>
+      <p>
+        원활한 운영을 위해 호출 시 자리에 계시지 않으면 예약이 취소될 수 있는 점 양해 부탁드립니다.
+      </p>
+      <p>
+        모두가 행복한 체험을 즐길 수 있도록 조금씩 양보하며 스태프의 안내를 따라주세요. 여러분의 배려가 더 즐거운 행사를 만듭니다.
+      </p>
+      {showCaptureWarning && (
+        <div className="mt-4 pt-3 border-t border-border/50">
+          <p className="text-primary font-bold">
+            ※ 화면 새로고침 시 대기표가 사라질 수 있으니 발급 후 꼭 화면을 캡처해 주세요.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function UserWaitingPage() {
   const params = useParams();
   const boothId = params.boothId as string;
@@ -192,6 +216,7 @@ export default function UserWaitingPage() {
             </form>
           </div>
           )}
+          <NoticeSection />
         </div>
       </main>
     )
@@ -239,6 +264,8 @@ export default function UserWaitingPage() {
         <p className="px-2 pt-2 pb-1 text-center text-[11px] text-muted-foreground">
           마지막 업데이트 · 방금 전
         </p>
+
+        <NoticeSection showCaptureWarning />
       </div>
 
       <ActionBar
