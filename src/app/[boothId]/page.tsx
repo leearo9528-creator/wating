@@ -7,7 +7,7 @@ import { registerWaitlist, cancelWaitlist, getBoothInfo } from '@/app/actions/wa
 import { supabaseClient } from '@/lib/supabase-client';
 
 // V0 Components
-import { BoothHeader } from "@/components/booth-header"
+// import { BoothHeader } from "@/components/booth-header"
 import { WaitingHero } from "@/components/waiting-hero"
 import { ActionBar } from "@/components/action-bar"
 import { UserRound, Users, ChevronRight, Store, Sparkles } from 'lucide-react';
@@ -25,7 +25,7 @@ export default function UserWaitingPage() {
   const [myWaitlistId, setMyWaitlistId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [boothInfo, setBoothInfo] = useState<{name: string, description: string, status?: string, photo_url?: string} | null>(null);
+  const [boothInfo, setBoothInfo] = useState<{name: string, description: string, status?: string, photo_url?: string, open_time?: string, close_time?: string, max_capacity?: number} | null>(null);
 
   const { currentCallingNumber, peopleAhead } = useWaitingStatus(boothId, myNumber);
 
@@ -51,12 +51,14 @@ export default function UserWaitingPage() {
     setIsSubmitting(true);
 
     const res = await registerWaitlist(boothId, name, partySize);
-    if (res.success && res.data) {
-      setMyNumber(res.data.waiting_number);
-      setMyWaitlistId(res.data.id);
-      setViewState('confirmed');
+    if (res.success) {
+      if (res.data) {
+        setMyNumber(res.data.waiting_number);
+        setMyWaitlistId(res.data.id);
+        setViewState('confirmed');
+      }
     } else {
-      alert('등록에 실패했습니다: ' + res.error);
+      alert('등록에 실패했습니다: ' + (res as any).error);
     }
     
     setIsSubmitting(false);
@@ -66,27 +68,35 @@ export default function UserWaitingPage() {
 
   if (viewState === 'register') {
     return (
-      <main className="min-h-dvh bg-secondary">
-        <BoothHeader boothName={boothInfo?.name || "로딩중..."} location={boothInfo?.description || ""} />
-        
-        <div className="mx-auto flex max-w-md flex-col gap-3 px-5 pt-2 pb-4">
-          {/* 부스 사진 & 위치 정보 */}
-          {(boothInfo?.photo_url || boothInfo?.description) && (
-            <div className="rounded-2xl bg-card shadow-sm border border-border overflow-hidden">
-              {boothInfo.photo_url && (
-                <div className="aspect-video w-full bg-muted">
+      <main className="min-h-dvh bg-secondary pb-10">
+        <div className="mx-auto flex max-w-md flex-col gap-4 px-5 pt-10 pb-4">
+          {/* 부스 상단 정보: 이름, 사진, 위치 */}
+          <div className="flex flex-col gap-5 mb-4 text-center">
+            <h1 className="text-3xl font-black tracking-tight text-foreground">
+              {boothInfo?.name || "로딩중..."}
+            </h1>
+            
+            {boothInfo?.photo_url && (
+              <div className="rounded-2xl bg-card shadow-sm border border-border overflow-hidden">
+                <div className="aspect-[4/3] w-full bg-muted">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={boothInfo.photo_url} alt={boothInfo.name} className="w-full h-full object-cover" />
                 </div>
-              )}
-              {boothInfo.description && (
-                <div className="px-5 py-3 flex items-center gap-2">
-                  <span className="text-sm">📍</span>
-                  <span className="text-sm text-muted-foreground font-medium">{boothInfo.description}</span>
+              </div>
+            )}
+
+            {boothInfo?.description && (
+              <div className="rounded-2xl bg-card shadow-sm border border-border px-5 py-4 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-lg">
+                  📍
                 </div>
-              )}
-            </div>
-          )}
+                <div>
+                  <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">위치 안내</p>
+                  <p className="text-[15px] text-foreground font-bold">{boothInfo.description}</p>
+                </div>
+              </div>
+            )}
+          </div>
           {boothInfo?.status && boothInfo.status !== 'open' ? (
             /* 운영 중이 아닐 때: 등록 차단 */
             <div className="rounded-2xl bg-card shadow-sm border border-border overflow-hidden">
@@ -95,18 +105,25 @@ export default function UserWaitingPage() {
                   <Store className="w-8 h-8 text-muted-foreground" />
                 </div>
                 <h2 className="text-xl font-bold tracking-tight mb-2">
-                  {boothInfo.status === 'closed' ? '웨이팅 준비 중입니다' : '웨이팅 접수가 마감되었습니다'}
+                  {boothInfo.status === 'closed' ? '운영 준비 중입니다' : '웨이팅 접수가 마감되었습니다'}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  {boothInfo.status === 'closed' ? '아직 웨이팅 접수가 시작되지 않았습니다. \n잠시 후 다시 확인해주세요.' : '오늘의 웨이팅 접수가 마감되었습니다.'}
+                  {boothInfo.status === 'closed' 
+                    ? '아직 대기 접수가 시작되지 않았습니다.' 
+                    : '오늘의 웨이팅 접수가 마감되었습니다.'}
                 </p>
+                {boothInfo.status === 'closed' && boothInfo.open_time && (
+                  <p className="text-sm font-bold text-foreground mt-3">
+                    부스 운영 시작 시간 : {boothInfo.open_time}
+                  </p>
+                )}
               </div>
             </div>
           ) : (
           /* 운영 중일 때: 등록 폼 */
           <div className="rounded-2xl bg-card shadow-sm border border-border overflow-hidden">
             <div className="px-5 pt-6 pb-2">
-              <h2 className="text-xl font-bold tracking-tight">웨이팅 등록</h2>
+              <h2 className="text-xl font-bold tracking-tight">대기 등록</h2>
               <p className="text-sm text-muted-foreground mt-1">정보를 입력하고 대기표를 발급받으세요.</p>
             </div>
             
@@ -167,26 +184,34 @@ export default function UserWaitingPage() {
 
   return (
     <main className="min-h-dvh bg-secondary pb-24">
-      <BoothHeader boothName={boothInfo?.name || "로딩중..."} location={boothInfo?.description || ""} />
-
-      <div className="mx-auto flex max-w-md flex-col gap-3 px-5 pt-2 pb-2">
-        {/* 부스 사진 & 위치 정보 */}
-        {(boothInfo?.photo_url || boothInfo?.description) && (
-          <div className="rounded-2xl bg-card shadow-sm border border-border overflow-hidden">
-            {boothInfo.photo_url && (
-              <div className="aspect-video w-full bg-muted">
+      <div className="mx-auto flex max-w-md flex-col gap-5 px-5 pt-12 pb-4">
+        {/* 부스 상단 정보: 이름, 사진, 위치 */}
+        <div className="flex flex-col gap-5 mb-4 text-center">
+          <h1 className="text-3xl font-black tracking-tight text-foreground">
+            {boothInfo?.name || "로딩중..."}
+          </h1>
+          
+          {boothInfo?.photo_url && (
+            <div className="rounded-2xl bg-card shadow-sm border border-border overflow-hidden">
+              <div className="aspect-[4/3] w-full bg-muted">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={boothInfo.photo_url} alt={boothInfo.name} className="w-full h-full object-cover" />
               </div>
-            )}
-            {boothInfo.description && (
-              <div className="px-5 py-3 flex items-center gap-2">
-                <span className="text-sm">📍</span>
-                <span className="text-sm text-muted-foreground font-medium">{boothInfo.description}</span>
+            </div>
+          )}
+
+          {boothInfo?.description && (
+            <div className="rounded-2xl bg-card shadow-sm border border-border px-5 py-4 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-lg">
+                📍
               </div>
-            )}
-          </div>
-        )}
+              <div>
+                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">위치 안내</p>
+                <p className="text-[15px] text-foreground font-bold">{boothInfo.description}</p>
+              </div>
+            </div>
+          )}
+        </div>
 
         <WaitingHero
           myNumber={myNumber!}

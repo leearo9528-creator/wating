@@ -32,7 +32,7 @@ export function useAdminWaitingList(boothId: string) {
         .from('waiting_list')
         .select('*')
         .eq('booth_id', boothId)
-        .in('status', ['waiting', 'calling'])
+        .in('status', ['waiting', 'calling', 'cancelled'])
         .order('waiting_number', { ascending: true });
 
       if (!error && data) {

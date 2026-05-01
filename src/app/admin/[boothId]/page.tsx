@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAdminWaitingList } from '@/hooks/useAdminWaitingList';
-import { updateBoothInfo, getBoothSettings, uploadBoothPhoto } from '@/app/actions/admin';
+import { updateBoothInfo, getBoothSettings, uploadBoothPhoto, generateBoothAdmin } from '@/app/actions/admin';
 import { getBoothInfo } from '@/app/actions/waitlist';
 import { Plus, Minus, Megaphone, ArrowLeft, Save, Copy, KeyRound, UserRound, ImagePlus, ChevronDown, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
@@ -197,29 +197,43 @@ export default function AdminPage() {
         ) : (
           <ul className="space-y-3">
             {list.map((item) => (
-              <li key={item.id} className="rounded-2xl bg-card p-4 shadow-sm border border-border flex flex-col gap-4">
-                <div className="flex items-center justify-between">
+              <li key={item.id} className={`rounded-2xl bg-card p-4 shadow-sm border border-border ${item.status === 'cancelled' ? 'opacity-50 grayscale-[0.5]' : ''}`}>
+                <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-secondary text-[17px] font-bold tabular-nums text-foreground">
+                    <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${item.status === 'cancelled' ? 'bg-muted' : 'bg-secondary'} text-[17px] font-bold tabular-nums text-foreground`}>
                       {item.waiting_number}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-[16px]">{item.name}</span>
-                        {item.waiting_number === currentNumber && (
-                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
-                            진행 차례
-                          </span>
-                        )}
-                        {item.waiting_number < currentNumber && (
-                          <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-muted-foreground">
-                            지나감
-                          </span>
-                        )}
+                    <div className="flex items-center gap-3">
+                      <span className="font-black text-[22px] tracking-tight">{item.name}</span>
+                      <div className="bg-primary/10 px-3 py-1 rounded-lg">
+                        <span className="text-primary font-bold text-[16px]">{item.count}명</span>
                       </div>
-                      <div className="text-[13px] text-muted-foreground mt-0.5">
-                        {item.count}명 · {new Date(item.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-[12px] text-muted-foreground whitespace-nowrap">
+                      {new Date(item.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} 접수
+                    </span>
+                    <div className="flex items-center gap-1">
+                      {item.status === 'cancelled' ? (
+                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-600">
+                          대기 취소
+                        </span>
+                      ) : (
+                        <>
+                          {item.waiting_number === currentNumber && (
+                            <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                              현재 차례
+                            </span>
+                          )}
+                          {item.waiting_number < currentNumber && (
+                            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+                              입장 완료
+                            </span>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -263,7 +277,7 @@ export default function AdminPage() {
         </div>
 
         {/* ===== 현장 스태프 로그인 정보 ===== */}
-        {adminId && adminPw && (
+        {adminId && adminPw ? (
           <div className="rounded-2xl bg-primary/5 p-5 shadow-sm border border-primary/20 space-y-3">
             <h3 className="text-sm font-bold text-primary flex items-center gap-1.5 mb-2">
               <KeyRound className="w-4 h-4" /> 현장 스태프 로그인 정보
@@ -276,7 +290,8 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => {
-                  navigator.clipboard.writeText(`아이디: ${adminId} / 비밀번호: ${adminPw}`);
+                  const loginUrl = `${window.location.origin}/login`;
+                  navigator.clipboard.writeText(`[${name}] 부스 관리자 계정\n아이디: ${adminId}\n비밀번호: ${adminPw}\n접속링크: ${loginUrl}`);
                   alert('복사되었습니다. 현장 스태프에게 전달해주세요.');
                 }}
                 className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1.5 rounded-lg active:scale-95 transition-all"
@@ -289,6 +304,23 @@ export default function AdminPage() {
               <span className="font-medium text-[15px]">{adminPw}</span>
             </div>
           </div>
+        ) : (
+          <button
+            type="button"
+            onClick={async () => {
+              const res = await generateBoothAdmin(boothId);
+              if (res.success && res.data) {
+                setAdminId(res.data.loginId);
+                setAdminPw(res.data.password);
+                alert(`스태프 계정이 생성되었습니다!\n아이디: ${res.data.loginId}\n비밀번호: ${res.data.password}`);
+              } else {
+                alert('계정 생성 실패: ' + (res.error || '알 수 없는 오류'));
+              }
+            }}
+            className="w-full py-4 rounded-2xl bg-primary/10 text-primary font-bold text-[15px] border-2 border-dashed border-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+          >
+            <KeyRound className="w-5 h-5" /> 스태프 계정 생성하기
+          </button>
         )}
 
         {/* ===== 부스 설정 (접이식) ===== */}

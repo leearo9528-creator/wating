@@ -264,3 +264,55 @@ export async function deleteBooth(boothId: string) {
     return { success: false as const, data: null, error: error.message };
   }
 }
+
+export async function generateBoothAdmin(boothId: string) {
+  try {
+    if (!supabaseAdmin) throw new Error('Supabase client is not initialized');
+
+    // Check if already has credentials
+    const { data: existing } = await supabaseAdmin
+      .from('booths')
+      .select('admin_login_id')
+      .eq('id', boothId)
+      .single();
+
+    if (existing?.admin_login_id) {
+      return { success: false as const, data: null, error: '이미 스태프 계정이 존재합니다.' };
+    }
+
+    const shortId = boothId.split('-')[0];
+    const loginId = `booth_${shortId}`;
+    const password = '123456';
+    const email = `${loginId}@flit.admin`;
+
+    // Create auth user
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
+
+    if (authError) throw authError;
+
+    // Create profile
+    await supabaseAdmin.from('profiles').insert({
+      id: authData.user.id,
+      role: 'booth_admin',
+      booth_id: boothId,
+    });
+
+    // Update booth with credentials and owner
+    await supabaseAdmin
+      .from('booths')
+      .update({
+        owner_id: authData.user.id,
+        admin_login_id: loginId,
+        admin_login_pw: password,
+      })
+      .eq('id', boothId);
+
+    return { success: true, data: { loginId, password } };
+  } catch (error: any) {
+    return { success: false as const, data: null, error: error.message };
+  }
+}

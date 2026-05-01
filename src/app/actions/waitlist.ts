@@ -156,7 +156,7 @@ const getCachedBoothData = unstable_cache(
     if (!supabaseAdmin) throw new Error('Supabase client is not initialized');
     const { data, error } = await supabaseAdmin
       .from('booths')
-      .select('name, description, current_number, status, photo_url')
+      .select('name, description, current_number, status, photo_url, open_time, close_time, max_capacity')
       .eq('id', boothId)
       .single();
     if (error) throw error;
