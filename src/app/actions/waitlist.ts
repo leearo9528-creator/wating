@@ -49,7 +49,7 @@ async function checkCapacityAutoClose(boothId: string) {
 
   if ((count ?? 0) >= booth.max_capacity) {
     await supabaseAdmin.from('booths').update({ status: 'paused' }).eq('id', boothId);
-    revalidateTag('booth');
+    revalidateTag('booth', 'max');
   }
 }
 
@@ -124,7 +124,7 @@ export async function getBoothInfo(boothId: string) {
       if (kstMinutes() >= h * 60 + m) {
         // 비동기 DB 업데이트 (응답 블로킹 없음)
         supabaseAdmin?.from('booths').update({ status: 'paused' }).eq('id', boothId);
-        revalidateTag('booth');
+        revalidateTag('booth', 'max');
         return { success: true, data: { ...data, status: 'paused' } };
       }
     }
