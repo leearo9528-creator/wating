@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useAdminWaitingList } from '@/hooks/useAdminWaitingList';
 import { updateBoothInfo, getBoothSettings, uploadBoothPhoto, generateBoothAdmin } from '@/app/actions/admin';
+import { resizeImageFile } from '@/lib/image-resize';
 import { Plus, Minus, Megaphone, ArrowLeft, Save, Copy, KeyRound, UserRound, ImagePlus, ChevronDown, ChevronUp, Printer } from 'lucide-react';
 import Link from 'next/link';
 
@@ -78,21 +79,23 @@ export default function AdminPage() {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert('이미지 크기는 5MB 이하여야 합니다.');
-      return;
-    }
+    const original = e.target.files?.[0];
+    if (!original) return;
     setIsUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await uploadBoothPhoto(boothId, formData);
-    setIsUploading(false);
-    if (res.success && res.url) {
-      setPhotoUrl(res.url);
-    } else {
-      alert('이미지 업로드에 실패했습니다.');
+    try {
+      // 큰 사진은 자동 리사이즈/압축 (서버 액션 한도 안쪽으로)
+      const file = await resizeImageFile(original, { maxDim: 1600, maxBytes: 900 * 1024 });
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await uploadBoothPhoto(boothId, formData);
+      if (res.success && res.url) {
+        setPhotoUrl(res.url);
+      } else {
+        alert('이미지 업로드에 실패했습니다.' + (res.error ? `\n(${res.error})` : ''));
+      }
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
